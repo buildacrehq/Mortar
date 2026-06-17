@@ -228,6 +228,7 @@ class _EditLeadScreenState extends ConsumerState<EditLeadScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
+    final lead = ref.read(leadsProvider.notifier).getById(widget.leadId);
     ref.read(leadsProvider.notifier).updateLead(
           id: widget.leadId,
           name: _name.text.trim(),
@@ -236,6 +237,7 @@ class _EditLeadScreenState extends ConsumerState<EditLeadScreen> {
           source: _source,
           serviceType: _serviceType,
           city: _city,
+          stage: lead?.stage ?? LeadStage.enquiryReceived,
           area: _area.text.trim().isEmpty ? null : _area.text.trim(),
           plotSize: _plotSize.text.trim().isEmpty ? null : _plotSize.text.trim(),
           budget: _budget.text.trim().isEmpty ? null : _budget.text.trim(),

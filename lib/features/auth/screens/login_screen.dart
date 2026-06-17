@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
+import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -28,18 +29,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    final success = ref.read(authProvider.notifier).login(
+    final error = await ref.read(authProvider.notifier).login(
           _emailController.text.trim(),
           _passwordController.text,
         );
+    if (!mounted) return;
     setState(() => _isLoading = false);
-    if (success) {
+    if (error == null) {
       context.go('/leads');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid credentials. Try again.')),
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -80,7 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Buildacre CRM',
+          AppConstants.appName,
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 color: Colors.white,
                 fontSize: 32,

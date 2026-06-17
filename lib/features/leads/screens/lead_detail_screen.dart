@@ -302,6 +302,8 @@ class _LeadDetails extends StatelessWidget {
               value: '${lead.lostReason!.emoji} ${lead.lostReason!.label}',
               valueColor: Colors.redAccent,
             ),
+          _KhataRow(lead: lead),
+          _PlanningRow(lead: lead),
         ],
       ),
     );
@@ -852,5 +854,187 @@ class _InternalNotes extends ConsumerWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+}
+
+class _PlanningRow extends ConsumerWidget {
+  final Lead lead;
+  const _PlanningRow({required this.lead});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.schedule_outlined,
+                size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 80,
+              child: Text('Planning',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontSize: 13)),
+            ),
+            Expanded(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: PlanningTimeline.values.map((t) {
+                  final isSelected = lead.planningTimeline == t;
+                  final color = t.isUrgent ? Colors.redAccent : AppColors.navy;
+                  return GestureDetector(
+                    onTap: () {
+                      final newVal = isSelected ? null : t;
+                      ref
+                          .read(leadsProvider.notifier)
+                          .updatePlanningTimeline(lead.id, newVal);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? color.withValues(alpha: 0.1)
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected ? color : AppColors.divider,
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(t.emoji,
+                              style: const TextStyle(fontSize: 12)),
+                          const SizedBox(width: 5),
+                          Text(
+                            t.label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: isSelected
+                                  ? color
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+class _KhataRow extends ConsumerWidget {
+  final Lead lead;
+  const _KhataRow({required this.lead});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            const Icon(Icons.article_outlined,
+                size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 80,
+              child: Text('Khata',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontSize: 13)),
+            ),
+            Expanded(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: KhataType.values.map((k) {
+                  final isSelected = lead.khataType == k;
+                  final isQuick = k.isQuickStart;
+                  return GestureDetector(
+                    onTap: () {
+                      // Toggle: tap selected to deselect
+                      final newVal = isSelected ? null : k;
+                      ref.read(leadsProvider.notifier).updateKhata(lead.id, newVal);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? (isQuick
+                                ? AppColors.stageWon.withValues(alpha: 0.12)
+                                : AppColors.navy.withValues(alpha: 0.08))
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected
+                              ? (isQuick
+                                  ? AppColors.stageWon
+                                  : AppColors.navy)
+                              : AppColors.divider,
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Text(
+                        k.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? (isQuick
+                                  ? AppColors.stageWon
+                                  : AppColors.navy)
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+        if (lead.khataType != null) ...[
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Text(
+              lead.khataType!.description,
+              style: TextStyle(
+                fontSize: 11,
+                color: lead.khataType!.isQuickStart
+                    ? AppColors.stageWon
+                    : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+      ],
+    );
   }
 }

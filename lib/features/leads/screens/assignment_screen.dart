@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
-import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 class AssignmentScreen extends ConsumerStatefulWidget {
   const AssignmentScreen({super.key});
@@ -15,87 +14,86 @@ class AssignmentScreen extends ConsumerStatefulWidget {
 }
 
 class _AssignmentScreenState extends ConsumerState<AssignmentScreen> {
-  String? _selectedTcFilter; // null = all
+  String? _selectedTcFilter;
 
   @override
   Widget build(BuildContext context) {
     final leads = ref.watch(leadsProvider);
+    final telecallers = ref.watch(telecallersProvider);
 
-    // Unassigned = 'unassigned' id OR leads assigned to unknown tc
-    final knownIds = mockTelecallers.map((t) => t.id).toSet();
+    final knownIds = telecallers.map((t) => t.id).toSet();
     final unassigned = leads
-        .where((l) => !knownIds.contains(l.assignedTo))
+        .where((l) => l.assignedTo.isEmpty || !knownIds.contains(l.assignedTo))
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-    // Build workload map
     final workload = <String, int>{};
-    for (final tc in mockTelecallers) {
+    for (final tc in telecallers) {
       workload[tc.id] = leads.where((l) => l.assignedTo == tc.id).length;
     }
     final maxLoad = workload.values.fold(0, (a, b) => a > b ? a : b);
 
-    // All leads for reassignment view, filtered by selected tc
     final assigned = leads
         .where((l) => knownIds.contains(l.assignedTo))
         .where((l) => _selectedTcFilter == null || l.assignedTo == _selectedTcFilter)
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
+    final filterName = _selectedTcFilter != null
+        ? telecallers.where((t) => t.id == _selectedTcFilter).firstOrNull?.firstName
+        : null;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Lead Assignment')),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 100),
-        children: [
-          // Workload bar
-          _WorkloadSection(
-            telecallers: mockTelecallers,
-            workload: workload,
-            maxLoad: maxLoad,
-            selected: _selectedTcFilter,
-            onTap: (id) => setState(() =>
-                _selectedTcFilter = _selectedTcFilter == id ? null : id),
-          ),
-
-          // Unassigned leads
-          if (unassigned.isNotEmpty) ...[
-            _SectionHeader(
-              label: 'Unassigned',
-              count: unassigned.length,
-              color: Colors.red,
-              icon: Icons.person_off_outlined,
-            ),
-            ...unassigned.map((l) => _LeadRow(
-                  lead: l,
-                  telecallers: mockTelecallers,
+      body: telecallers.isEmpty
+          ? const Center(child: Text('No telecallers found.\nAdd team members in Supabase Auth.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary)))
+          : ListView(
+              padding: const EdgeInsets.only(bottom: 100),
+              children: [
+                _WorkloadSection(
+                  telecallers: telecallers,
                   workload: workload,
-                  highlight: true,
-                )),
-            const SizedBox(height: 8),
-          ],
-
-          // Assigned leads (filterable)
-          _SectionHeader(
-            label: _selectedTcFilter == null
-                ? 'All Assigned Leads'
-                : '${mockTelecallers.firstWhere((t) => t.id == _selectedTcFilter).name.split(' ').first}\'s Leads',
-            count: assigned.length,
-            color: AppColors.navy,
-            icon: Icons.assignment_ind_outlined,
-          ),
-          ...assigned.map((l) => _LeadRow(
-                lead: l,
-                telecallers: mockTelecallers,
-                workload: workload,
-              )),
-        ],
-      ),
+                  maxLoad: maxLoad,
+                  selected: _selectedTcFilter,
+                  onTap: (id) => setState(() =>
+                      _selectedTcFilter = _selectedTcFilter == id ? null : id),
+                ),
+                if (unassigned.isNotEmpty) ...[
+                  _SectionHeader(
+                    label: 'Unassigned',
+                    count: unassigned.length,
+                    color: Colors.red,
+                    icon: Icons.person_off_outlined,
+                  ),
+                  ...unassigned.map((l) => _LeadRow(
+                        lead: l,
+                        telecallers: telecallers,
+                        workload: workload,
+                        highlight: true,
+                      )),
+                  const SizedBox(height: 8),
+                ],
+                _SectionHeader(
+                  label: filterName != null ? "$filterName's Leads" : 'All Assigned Leads',
+                  count: assigned.length,
+                  color: AppColors.navy,
+                  icon: Icons.assignment_ind_outlined,
+                ),
+                ...assigned.map((l) => _LeadRow(
+                      lead: l,
+                      telecallers: telecallers,
+                      workload: workload,
+                    )),
+              ],
+            ),
     );
   }
 }
 
 class _WorkloadSection extends StatelessWidget {
-  final List<TelecallerProfile> telecallers;
+  final List<TeamMember> telecallers;
   final Map<String, int> workload;
   final int maxLoad;
   final String? selected;
@@ -117,17 +115,17 @@ class _WorkloadSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'TEAM WORKLOAD',
-            style: TextStyle(
-                color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8),
-          ),
+          const Text('TEAM WORKLOAD',
+              style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8)),
           const SizedBox(height: 12),
           ...telecallers.map((tc) {
             final count = workload[tc.id] ?? 0;
             final pct = maxLoad == 0 ? 0.0 : count / maxLoad;
             final isSelected = selected == tc.id;
-
             return GestureDetector(
               onTap: () => onTap(tc.id),
               child: Container(
@@ -149,27 +147,26 @@ class _WorkloadSection extends StatelessWidget {
                     CircleAvatar(
                       radius: 14,
                       backgroundColor: AppColors.gold.withValues(alpha: 0.2),
-                      child: Text(
-                        tc.name[0],
-                        style: const TextStyle(
-                            color: AppColors.gold, fontSize: 12, fontWeight: FontWeight.w700),
-                      ),
+                      child: Text(tc.initials,
+                          style: const TextStyle(
+                              color: AppColors.gold,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700)),
                     ),
                     const SizedBox(width: 10),
                     SizedBox(
-                      width: 70,
+                      width: 80,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            tc.name.split(' ').first,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            tc.city.label,
-                            style: const TextStyle(color: Colors.white38, fontSize: 10),
-                          ),
+                          Text(tc.firstName,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                          Text(tc.city ?? '',
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 10)),
                         ],
                       ),
                     ),
@@ -187,21 +184,19 @@ class _WorkloadSection extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      '$count leads',
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
-                    ),
+                    Text('$count leads',
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
             );
           }),
           const SizedBox(height: 4),
-          const Text(
-            'Tap a rep to filter · Bar turns red when overloaded',
-            style: TextStyle(color: Colors.white38, fontSize: 11),
-          ),
+          const Text('Tap a rep to filter · Bar turns red when overloaded',
+              style: TextStyle(color: Colors.white38, fontSize: 11)),
         ],
       ),
     );
@@ -213,9 +208,11 @@ class _SectionHeader extends StatelessWidget {
   final int count;
   final Color color;
   final IconData icon;
-
   const _SectionHeader(
-      {required this.label, required this.count, required this.color, required this.icon});
+      {required this.label,
+      required this.count,
+      required this.color,
+      required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +223,8 @@ class _SectionHeader extends StatelessWidget {
           Icon(icon, size: 15, color: color),
           const SizedBox(width: 6),
           Text(label,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+              style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w700, color: color)),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -235,8 +233,8 @@ class _SectionHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text('$count',
-                style:
-                    TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+                style: TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: color)),
           ),
         ],
       ),
@@ -246,7 +244,7 @@ class _SectionHeader extends StatelessWidget {
 
 class _LeadRow extends ConsumerWidget {
   final Lead lead;
-  final List<TelecallerProfile> telecallers;
+  final List<TeamMember> telecallers;
   final Map<String, int> workload;
   final bool highlight;
 
@@ -259,7 +257,8 @@ class _LeadRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentTc = telecallers.where((t) => t.id == lead.assignedTo).firstOrNull;
+    final currentTc =
+        telecallers.where((t) => t.id == lead.assignedTo).firstOrNull;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -276,53 +275,55 @@ class _LeadRow extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Source icon
               SourceIcon(source: lead.source),
               const SizedBox(width: 10),
-              // Lead info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(lead.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 14)),
                     const SizedBox(height: 2),
                     Text(
-                      '${lead.serviceType.label} · ${lead.city.label}${lead.area != null ? ' · ${lead.area}' : ''}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      '${lead.serviceType.label} · ${lead.city.label}'
+                      '${lead.area != null ? ' · ${lead.area}' : ''}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              // Current assignee + change button
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (currentTc != null)
-                    Text(
-                      currentTc.name.split(' ').first,
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-                    )
-                  else
-                    const Text('Unassigned',
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.red, fontWeight: FontWeight.w500)),
+                  currentTc != null
+                      ? Text(currentTc.firstName,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary))
+                      : const Text('Unassigned',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.red,
+                              fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
                   GestureDetector(
                     onTap: () => _showAssignSheet(context, ref),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: highlight ? Colors.red : AppColors.navy,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(
-                        highlight ? 'Assign' : 'Reassign',
-                        style: const TextStyle(
-                            fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
-                      ),
+                      child: Text(highlight ? 'Assign' : 'Reassign',
+                          style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ],
@@ -345,15 +346,13 @@ class _LeadRow extends ConsumerWidget {
         onAssign: (tcId) {
           ref.read(leadsProvider.notifier).assignLead(lead.id, tcId);
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  '${lead.name} assigned to ${telecallers.firstWhere((t) => t.id == tcId).name.split(' ').first}'),
-              backgroundColor: AppColors.navy,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          final tc = telecallers.firstWhere((t) => t.id == tcId);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('${lead.name} assigned to ${tc.firstName}'),
+            backgroundColor: AppColors.navy,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ));
         },
       ),
     );
@@ -362,7 +361,7 @@ class _LeadRow extends ConsumerWidget {
 
 class _AssignSheet extends StatelessWidget {
   final Lead lead;
-  final List<TelecallerProfile> telecallers;
+  final List<TeamMember> telecallers;
   final Map<String, int> workload;
   final void Function(String) onAssign;
 
@@ -394,14 +393,11 @@ class _AssignSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Assign ${lead.name}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    Text(
-                      '${lead.serviceType.label} · ${lead.city.label}',
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                    ),
+                    Text('Assign ${lead.name}',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    Text('${lead.serviceType.label} · ${lead.city.label}',
+                        style: const TextStyle(
+                            fontSize: 13, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
@@ -412,10 +408,8 @@ class _AssignSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Sorted by lightest workload first',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
+          const Text('Sorted by lightest workload first',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           const SizedBox(height: 16),
           ...sorted.map((tc) {
             final count = workload[tc.id] ?? 0;
@@ -440,11 +434,11 @@ class _AssignSheet extends StatelessWidget {
                     CircleAvatar(
                       radius: 16,
                       backgroundColor: AppColors.navy.withValues(alpha: 0.1),
-                      child: Text(tc.name[0],
+                      child: Text(tc.initials,
                           style: const TextStyle(
                               color: AppColors.navy,
                               fontWeight: FontWeight.w700,
-                              fontSize: 13)),
+                              fontSize: 12)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -455,7 +449,8 @@ class _AssignSheet extends StatelessWidget {
                             children: [
                               Text(tc.name,
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.w600, fontSize: 14)),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14)),
                               if (isCurrent) ...[
                                 const SizedBox(width: 6),
                                 Container(
@@ -475,16 +470,18 @@ class _AssignSheet extends StatelessWidget {
                             ],
                           ),
                           Text(
-                            '${tc.city.label} · $count lead${count != 1 ? 's' : ''}',
+                            '${tc.city ?? ''} · $count lead${count != 1 ? 's' : ''}',
                             style: const TextStyle(
-                                fontSize: 12, color: AppColors.textSecondary),
+                                fontSize: 12,
+                                color: AppColors.textSecondary),
                           ),
                         ],
                       ),
                     ),
                     if (!isCurrent)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.gold,
                           borderRadius: BorderRadius.circular(8),

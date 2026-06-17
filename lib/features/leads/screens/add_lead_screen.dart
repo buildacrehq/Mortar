@@ -25,6 +25,8 @@ class _AddLeadScreenState extends ConsumerState<AddLeadScreen> {
   LeadSource _source = LeadSource.phone;
   ServiceType _serviceType = ServiceType.construction;
   City _city = City.bangalore;
+  KhataType? _khataType;
+  PlanningTimeline? _planningTimeline;
   bool _saving = false;
 
   @override
@@ -64,6 +66,8 @@ class _AddLeadScreenState extends ConsumerState<AddLeadScreen> {
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
+          khataType: _khataType,
+          planningTimeline: _planningTimeline,
         );
 
     await Future.delayed(const Duration(milliseconds: 200));
@@ -186,6 +190,75 @@ class _AddLeadScreenState extends ConsumerState<AddLeadScreen> {
                 filled: true,
                 fillColor: Colors.white,
               ),
+            ),
+            const SizedBox(height: 20),
+            _SectionHeader(label: 'Khata Type (optional)'),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: KhataType.values.map((k) {
+                final isSelected = _khataType == k;
+                final color = k.isQuickStart ? AppColors.stageWon : AppColors.navy;
+                return GestureDetector(
+                  onTap: () => setState(() => _khataType = isSelected ? null : k),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: isSelected ? color : AppColors.divider,
+                          width: isSelected ? 1.5 : 1),
+                    ),
+                    child: Text(k.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          color: isSelected ? color : AppColors.textPrimary,
+                        )),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            _SectionHeader(label: 'Planning Timeline (optional)'),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: PlanningTimeline.values.map((t) {
+                final isSelected = _planningTimeline == t;
+                final color = t.isUrgent ? Colors.redAccent : AppColors.navy;
+                return GestureDetector(
+                  onTap: () => setState(() => _planningTimeline = isSelected ? null : t),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: isSelected ? color : AppColors.divider,
+                          width: isSelected ? 1.5 : 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(t.emoji, style: const TextStyle(fontSize: 13)),
+                        const SizedBox(width: 6),
+                        Text(t.label,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                              color: isSelected ? color : AppColors.textPrimary,
+                            )),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 32),
             ElevatedButton(

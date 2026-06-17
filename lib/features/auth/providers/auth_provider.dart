@@ -1,62 +1,95 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
+import 'package:buildacre_crm/main.dart';
 
 class AppUser {
   final String id;
   final String name;
   final String email;
   final UserRole role;
+  final String? city;
 
   const AppUser({
     required this.id,
     required this.name,
     required this.email,
     required this.role,
+    this.city,
   });
 }
 
-// Mock users — replace with real Supabase auth later
-const _mockUsers = [
-  AppUser(
-    id: 'tc_1',
-    name: 'Ravi Kumar',
-    email: 'ravi@buildacre.in',
-    role: UserRole.telecaller,
-  ),
-  AppUser(
-    id: 'mgr_1',
-    name: 'Harsha',
-    email: 'harsha@buildacre.in',
-    role: UserRole.manager,
-  ),
-  AppUser(
-    id: 'adm_1',
-    name: 'Admin',
-    email: 'admin@buildacre.in',
-    role: UserRole.admin,
-  ),
-];
-
 class AuthNotifier extends StateNotifier<AppUser?> {
-  AuthNotifier() : super(null);
-
-  // Returns true if login succeeded
-  bool login(String email, String password) {
-    // TODO: replace with real Supabase auth
-    final user = _mockUsers.where((u) => u.email == email).firstOrNull;
-    if (user != null && password.length >= 6) {
-      state = user;
-      return true;
-    }
-    // Default: any valid-looking login gets manager role for testing
-    if (password.length >= 6) {
-      state = _mockUsers[1]; // default to manager
-      return true;
-    }
-    return false;
+  AuthNotifier() : super(null) {
+    _init();
   }
 
-  void logout() => state = null;
+  void _init() {
+    try {
+      final session = supabase.auth.currentSession;
+      if (session != null) {
+        _loadProfile(session.user.id);
+      }
+
+      supabase.auth.onAuthStateChange.listen((data) {
+        final event = data.event;
+        final user = data.session?.user;
+        if (event == AuthChangeEvent.signedIn && user != null) {
+          _loadProfile(user.id);
+        } else if (event == AuthChangeEvent.signedOut) {
+          state = null;
+        }
+      });
+    } catch (_) {
+      // Silently ignore init errors (e.g. passkeys web SDK on Chrome)
+    }
+  }
+
+  Future<void> _loadProfile(String userId) async {
+    try {
+      final data = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+
+      final roleStr = data['role'] as String;
+      final role = switch (roleStr) {
+        'admin'      => UserRole.admin,
+        'manager'    => UserRole.manager,
+        _            => UserRole.telecaller,
+      };
+
+      state = AppUser(
+        id: data['id'] as String,
+        name: data['name'] as String,
+        email: data['email'] as String,
+        role: role,
+        city: data['city'] as String?,
+      );
+    } catch (e) {
+      state = null;
+    }
+  }
+
+  Future<String?> login(String email, String password) async {
+    try {
+      await supabase.auth.signInWithPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      return null; // success
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return 'Something went wrong. Please try again.';
+    }
+  }
+
+  Future<void> logout() async {
+    await supabase.auth.signOut();
+    state = null;
+  }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AppUser?>(

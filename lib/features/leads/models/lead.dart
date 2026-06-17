@@ -36,6 +36,8 @@ class Lead {
   final CallOutcome? lastOutcome;
   final FutureTag? futureTag;
   final LostReason? lostReason;
+  final KhataType? khataType;
+  final PlanningTimeline? planningTimeline;
   final List<CallLog> callLogs;
   final List<LeadNote> internalNotes;
 
@@ -59,6 +61,8 @@ class Lead {
     this.lastOutcome,
     this.futureTag,
     this.lostReason,
+    this.khataType,
+    this.planningTimeline,
     this.callLogs = const [],
     this.internalNotes = const [],
   });
@@ -80,6 +84,8 @@ class Lead {
     CallOutcome? lastOutcome,
     FutureTag? futureTag,
     LostReason? lostReason,
+    KhataType? khataType,
+    PlanningTimeline? planningTimeline,
     List<CallLog>? callLogs,
     List<LeadNote>? internalNotes,
     DateTime? lastContactedAt,
@@ -105,6 +111,8 @@ class Lead {
       lastOutcome: lastOutcome ?? this.lastOutcome,
       futureTag: futureTag ?? this.futureTag,
       lostReason: lostReason ?? this.lostReason,
+      khataType: khataType ?? this.khataType,
+      planningTimeline: planningTimeline ?? this.planningTimeline,
       callLogs: callLogs ?? this.callLogs,
       internalNotes: internalNotes ?? this.internalNotes,
     );

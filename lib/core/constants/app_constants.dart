@@ -29,6 +29,10 @@ enum CallOutcome { interested, notInterested, callback, notReachable, future }
 
 enum FutureTag { hot, warm, cool, longTerm }
 
+enum KhataType { aKhata, bKhata, bda, bmrda, panchayat, other }
+
+enum PlanningTimeline { immediate, within3Months, within6Months, withinYear }
+
 enum LostReason {
   priceTooHigh,
   wentWithCompetitor,
@@ -159,4 +163,53 @@ extension LostReasonExt on LostReason {
       case LostReason.other:              return '📝';
     }
   }
+}
+
+extension KhataTypeExt on KhataType {
+  String get label {
+    switch (this) {
+      case KhataType.aKhata:   return 'A Khata';
+      case KhataType.bKhata:   return 'B Khata';
+      case KhataType.bda:      return 'BDA';
+      case KhataType.bmrda:    return 'BMRDA';
+      case KhataType.panchayat: return 'Panchayat';
+      case KhataType.other:    return 'Others';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case KhataType.aKhata:   return 'BBMP approved — easy permits';
+      case KhataType.bKhata:   return 'Needs regularization';
+      case KhataType.bda:      return 'BDA layout';
+      case KhataType.bmrda:    return 'BMRDA layout';
+      case KhataType.panchayat: return 'Outside municipal limits';
+      case KhataType.other:    return 'Other / Unknown';
+    }
+  }
+
+  // Color coding — green for easiest, amber for moderate, red/grey for complex
+  bool get isQuickStart => this == KhataType.aKhata || this == KhataType.bda;
+}
+
+extension PlanningTimelineExt on PlanningTimeline {
+  String get label {
+    switch (this) {
+      case PlanningTimeline.immediate:      return 'Immediate';
+      case PlanningTimeline.within3Months:  return 'Within 3 Months';
+      case PlanningTimeline.within6Months:  return 'Within 6 Months';
+      case PlanningTimeline.withinYear:     return 'Within a Year';
+    }
+  }
+
+  String get emoji {
+    switch (this) {
+      case PlanningTimeline.immediate:      return '🔥';
+      case PlanningTimeline.within3Months:  return '📅';
+      case PlanningTimeline.within6Months:  return '🗓️';
+      case PlanningTimeline.withinYear:     return '⏳';
+    }
+  }
+
+  bool get isUrgent => this == PlanningTimeline.immediate;
 }
