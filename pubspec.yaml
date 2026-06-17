@@ -1,5 +1,5 @@
 name: buildacre_crm
-description: "Buildacre CRM — Turnkey Construction Lead Management"
+description: "Mortar — Construction CRM for Buildacre"
 publish_to: 'none'
 
 version: 1.0.0+1

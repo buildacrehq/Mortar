@@ -1,5 +1,6 @@
 class AppConstants {
-  static const appName = 'Buildacre CRM';
+  // App name — change here to rename across the entire app
+  static const appName = 'Mortar';
   static const shortCallThresholdSeconds = 30;
   static const quotationFollowupDays = 3;
 }
