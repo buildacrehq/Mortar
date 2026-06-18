@@ -738,6 +738,8 @@ class _LeadCard extends ConsumerWidget {
                     icon: Icons.currency_rupee,
                     label: lead.budget!,
                   ),
+                if (lead.lastOutcome != null)
+                  _OutcomePill(outcome: lead.lastOutcome!),
               ],
             ),
             if (lead.followupAt != null) ...[
@@ -801,6 +803,34 @@ class _LeadCard extends ConsumerWidget {
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return DateFormat('d MMM').format(dt);
+  }
+}
+
+class _OutcomePill extends StatelessWidget {
+  final CallOutcome outcome;
+  const _OutcomePill({required this.outcome});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (outcome) {
+      CallOutcome.interested    => AppColors.stageWon,
+      CallOutcome.callback      => AppColors.gold,
+      CallOutcome.future        => const Color(0xFF60A5FA),
+      CallOutcome.notReachable  => AppColors.textSecondary,
+      CallOutcome.notInterested => Colors.redAccent,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        outcome.label,
+        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+      ),
+    );
   }
 }
 

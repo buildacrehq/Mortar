@@ -47,6 +47,16 @@ List<LeadActivity> buildTimeline(Lead lead) {
     ));
   }
 
+  // Internal notes
+  for (final note in lead.internalNotes) {
+    activities.add(LeadActivity(
+      type: ActivityType.noteAdded,
+      at: note.createdAt,
+      title: 'Note by ${note.authorName}',
+      subtitle: note.text,
+    ));
+  }
+
   // Follow-up scheduled (from latest call that has one)
   if (lead.followupAt != null && lead.callLogs.isNotEmpty) {
     final lastCall = lead.callLogs.last;
@@ -55,6 +65,15 @@ List<LeadActivity> buildTimeline(Lead lead) {
       at: lastCall.calledAt.add(const Duration(seconds: 1)),
       title: 'Follow-up scheduled',
       subtitle: _formatFollowup(lead.followupAt!),
+    ));
+  }
+
+  // Khata or planning set
+  if (lead.khataType != null) {
+    activities.add(LeadActivity(
+      type: ActivityType.stageChanged,
+      at: lead.lastContactedAt ?? lead.createdAt,
+      title: 'Khata type set — ${lead.khataType!.label}',
     ));
   }
 

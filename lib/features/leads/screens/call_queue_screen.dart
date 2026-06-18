@@ -102,8 +102,14 @@ class CallQueueScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: totalPending == 0
-          ? _buildAllDone(context)
+      body: RefreshIndicator(
+        color: AppColors.navy,
+        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        child: totalPending == 0
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [_buildAllDone(context)],
+            )
           : ListView(
               padding: const EdgeInsets.only(bottom: 100),
               children: [
@@ -148,6 +154,7 @@ class CallQueueScreen extends ConsumerWidget {
                 ],
               ],
             ),
+      ),
     );
   }
 
