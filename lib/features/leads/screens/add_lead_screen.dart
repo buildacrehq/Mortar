@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
+import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 
@@ -29,6 +30,19 @@ class _AddLeadScreenState extends ConsumerState<AddLeadScreen> {
   KhataType? _khataType;
   PlanningTimeline? _planningTimeline;
   bool _saving = false;
+  Lead? _duplicateLead;
+
+  void _checkDuplicate(String phone) {
+    final clean = phone.replaceAll(RegExp(r'\D'), '');
+    if (clean.length < 10) {
+      if (_duplicateLead != null) setState(() => _duplicateLead = null);
+      return;
+    }
+    final leads = ref.read(leadsProvider);
+    final match = leads.where((l) =>
+        l.phone.replaceAll(RegExp(r'\D'), '') == clean).firstOrNull;
+    if (match != _duplicateLead) setState(() => _duplicateLead = match);
+  }
 
   @override
   void dispose() {
@@ -117,12 +131,15 @@ class _AddLeadScreenState extends ConsumerState<AddLeadScreen> {
               icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
               inputAction: TextInputAction.next,
+              onChanged: _checkDuplicate,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Phone is required';
                 if (v.trim().length < 10) return 'Enter a valid phone number';
                 return null;
               },
             ),
+            if (_duplicateLead != null)
+              _DuplicateBanner(lead: _duplicateLead!),
             const SizedBox(height: 12),
             _buildField(
               controller: _emailController,
@@ -290,12 +307,14 @@ class _AddLeadScreenState extends ConsumerState<AddLeadScreen> {
     TextInputType? keyboardType,
     TextInputAction? inputAction,
     String? Function(String?)? validator,
+    void Function(String)? onChanged,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       textInputAction: inputAction,
       validator: validator,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -459,6 +478,53 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+    );
+  }
+}
+
+class _DuplicateBanner extends ConsumerWidget {
+  final Lead lead;
+  const _DuplicateBanner({required this.lead});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => context.push('/leads/${lead.id}'),
+      child: Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.orangeAccent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber_outlined,
+                color: Colors.orangeAccent, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Duplicate phone number',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orangeAccent)),
+                  Text(
+                    '${lead.name} · ${lead.stage.label} · ${lead.city.label}',
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.open_in_new,
+                size: 14, color: Colors.orangeAccent),
+          ],
+        ),
+      ),
     );
   }
 }
