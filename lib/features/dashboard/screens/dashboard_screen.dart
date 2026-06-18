@@ -77,7 +77,10 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(width: 4),
         ],
       ),
-      body: ListView(
+      body: RefreshIndicator(
+        color: AppColors.navy,
+        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _buildTopStats(context, todayCount, leads.length, totalCalls, overdue.length),
@@ -109,6 +112,7 @@ class DashboardScreen extends ConsumerWidget {
           _buildRecentActivity(context, leads),
           const SizedBox(height: 100),
         ],
+      ),
       ),
     );
   }

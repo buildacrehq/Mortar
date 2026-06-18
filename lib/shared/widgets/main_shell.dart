@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 
 class MainShell extends ConsumerWidget {
   final Widget child;
@@ -14,10 +15,12 @@ class MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(currentUserRoleProvider);
     final location = GoRouterState.of(context).matchedLocation;
+    final overdueCount = ref.watch(overdueLeadsProvider).length;
 
     final tabs = _tabsForRole(role);
     final currentIndex = _indexFor(location, tabs);
     final onLeads = location == '/leads';
+    final queueIndex = tabs.indexWhere((t) => t.path == '/queue');
 
     return Scaffold(
       body: child,
@@ -37,12 +40,29 @@ class MainShell extends ConsumerWidget {
         indicatorColor: AppColors.navy.withValues(alpha: 0.1),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         onDestinationSelected: (i) => context.go(tabs[i].path),
-        destinations: tabs
-            .map((t) => NavigationDestination(
-                  icon: Icon(t.icon, color: AppColors.textSecondary),
-                  selectedIcon: Icon(t.selectedIcon, color: AppColors.navy),
-                  label: t.label,
-                ))
+        destinations: tabs.indexed
+            .map((entry) {
+              final i = entry.$1;
+              final t = entry.$2;
+              final showBadge = i == queueIndex && overdueCount > 0;
+              return NavigationDestination(
+                icon: showBadge
+                    ? Badge(
+                        label: Text('$overdueCount'),
+                        backgroundColor: Colors.redAccent,
+                        child: Icon(t.icon, color: AppColors.textSecondary),
+                      )
+                    : Icon(t.icon, color: AppColors.textSecondary),
+                selectedIcon: showBadge
+                    ? Badge(
+                        label: Text('$overdueCount'),
+                        backgroundColor: Colors.redAccent,
+                        child: Icon(t.selectedIcon, color: AppColors.navy),
+                      )
+                    : Icon(t.selectedIcon, color: AppColors.navy),
+                label: t.label,
+              );
+            })
             .toList(),
       ),
     );

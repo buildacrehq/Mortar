@@ -751,6 +751,8 @@ class _LeadCard extends ConsumerWidget {
                   ),
                 if (lead.khataType != null)
                   _KhataBadge(khata: lead.khataType!),
+                if (lead.planningTimeline != null)
+                  _PlanningBadge(timeline: lead.planningTimeline!),
               ],
             ),
             if (lead.followupAt != null) ...[
@@ -839,6 +841,38 @@ class _KhataBadge extends StatelessWidget {
           Text(khata.label,
               style: TextStyle(
                   fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanningBadge extends StatelessWidget {
+  final PlanningTimeline timeline;
+  const _PlanningBadge({required this.timeline});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = timeline.isUrgent ? Colors.redAccent : AppColors.navy;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(timeline.emoji, style: const TextStyle(fontSize: 9)),
+          const SizedBox(width: 3),
+          Text(
+            timeline.isUrgent ? 'Immediate' : timeline.label.split(' ').last == 'Months'
+                ? '${timeline.label.split(' ')[1]}M'
+                : '1Y',
+            style: TextStyle(
+                fontSize: 10, color: color, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
