@@ -33,6 +33,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   @override
   Widget build(BuildContext context) {
     final allLeads = ref.watch(leadsProvider);
+    final isLoading = ref.watch(leadsLoadingProvider);
     final overdueCount = ref.watch(overdueLeadsProvider).length;
     final todayCount = ref.watch(todayLeadsCountProvider);
     final role = ref.watch(currentUserRoleProvider);
@@ -128,9 +129,20 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
         children: [
           _buildStatsBar(todayCount, overdueCount, allLeads.length),
           _buildSearchAndFilter(),
+          if (isLoading)
+            const LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: Colors.transparent,
+              color: AppColors.gold,
+            ),
           Expanded(
-            child: filtered.isEmpty
-                ? _buildEmptyState()
+            child: RefreshIndicator(
+              color: AppColors.navy,
+              onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+              child: filtered.isEmpty
+                ? isLoading
+                    ? const SizedBox.shrink()
+                    : _buildEmptyState()
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                     itemCount: filtered.length,
@@ -140,6 +152,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
                       onTap: () => context.push('/leads/${filtered[i].id}'),
                     ),
                   ),
+            ),
           ),
         ],
       ),

@@ -13,6 +13,7 @@ import 'package:buildacre_crm/features/leads/widgets/whatsapp_sheet.dart';
 import 'package:buildacre_crm/features/leads/widgets/add_note_sheet.dart';
 import 'package:buildacre_crm/features/leads/widgets/mark_as_lost_sheet.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 class LeadDetailScreen extends ConsumerWidget {
   final String leadId;
@@ -24,6 +25,9 @@ class LeadDetailScreen extends ConsumerWidget {
     final lead = ref.watch(leadByIdProvider(leadId));
     final role = ref.watch(currentUserRoleProvider);
     final isTelecaller = role == UserRole.telecaller;
+    final assignedMember = lead != null && lead.assignedTo.isNotEmpty
+        ? ref.watch(memberByIdProvider(lead.assignedTo))
+        : null;
 
     if (lead == null) {
       return const Scaffold(body: Center(child: Text('Lead not found')));
@@ -56,7 +60,7 @@ class LeadDetailScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _PipelineProgress(stage: lead.stage),
           const SizedBox(height: 16),
-          _LeadDetails(lead: lead, isTelecaller: isTelecaller),
+          _LeadDetails(lead: lead, isTelecaller: isTelecaller, assignedMember: assignedMember),
           if (lead.notes != null && lead.notes!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _NotesCard(notes: lead.notes!),
@@ -258,8 +262,9 @@ class _StepDot extends StatelessWidget {
 class _LeadDetails extends StatelessWidget {
   final Lead lead;
   final bool isTelecaller;
+  final TeamMember? assignedMember;
 
-  const _LeadDetails({required this.lead, required this.isTelecaller});
+  const _LeadDetails({required this.lead, required this.isTelecaller, this.assignedMember});
 
   @override
   Widget build(BuildContext context) {
@@ -295,6 +300,13 @@ class _LeadDetails extends StatelessWidget {
             label: 'Received',
             value: DateFormat('d MMM yyyy, h:mm a').format(lead.createdAt),
           ),
+          if (assignedMember != null)
+            _DetailRow(
+              icon: Icons.person_outline,
+              label: 'Assigned To',
+              value: assignedMember!.name,
+              valueColor: AppColors.navy,
+            ),
           if (lead.stage == LeadStage.lost && lead.lostReason != null)
             _DetailRow(
               icon: Icons.person_off_outlined,

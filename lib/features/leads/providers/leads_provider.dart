@@ -8,24 +8,35 @@ import 'package:buildacre_crm/main.dart';
 
 final _service = LeadsService();
 
+// Tracks whether the initial load is in progress
+final leadsLoadingProvider = StateProvider<bool>((ref) => true);
+
 class LeadsNotifier extends StateNotifier<List<Lead>> {
-  LeadsNotifier() : super([]) {
+  LeadsNotifier(this._ref) : super([]) {
     _load();
     _subscribeRealtime();
   }
+
+  final Ref _ref;
 
   // ─── Load ─────────────────────────────────────────────────────────────────
 
   Future<void> _load() async {
     try {
       final leads = await _service.fetchAll();
-      if (mounted) state = leads;
+      if (mounted) {
+        state = leads;
+        _ref.read(leadsLoadingProvider.notifier).state = false;
+      }
     } catch (_) {
-      // DB not reachable — keep empty list
+      if (mounted) _ref.read(leadsLoadingProvider.notifier).state = false;
     }
   }
 
-  Future<void> refresh() => _load();
+  Future<void> refresh() async {
+    _ref.read(leadsLoadingProvider.notifier).state = true;
+    await _load();
+  }
 
   void _subscribeRealtime() {
     supabase
@@ -304,7 +315,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
 // ─── Providers ────────────────────────────────────────────────────────────────
 
 final leadsProvider = StateNotifierProvider<LeadsNotifier, List<Lead>>(
-  (ref) => LeadsNotifier(),
+  (ref) => LeadsNotifier(ref),
 );
 
 final leadByIdProvider = Provider.family<Lead?, String>((ref, id) {
