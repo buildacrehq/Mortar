@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
+import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/main.dart';
 
 class TeamMember {
@@ -10,6 +11,7 @@ class TeamMember {
   final String? city;
   final String? phone;
   final bool isActive;
+  final List<ServiceType> serviceTypes;
 
   const TeamMember({
     required this.id,
@@ -19,6 +21,7 @@ class TeamMember {
     this.city,
     this.phone,
     this.isActive = true,
+    this.serviceTypes = const [],
   });
 
   String get initials {
@@ -40,6 +43,13 @@ TeamMember _fromMap(Map<String, dynamic> m) {
     'manager' => UserRole.manager,
     _         => UserRole.telecaller,
   };
+  final rawServices = m['service_types'] as List<dynamic>? ?? [];
+  final serviceTypes = rawServices
+      .map((s) => ServiceType.values.firstWhere(
+            (e) => e.name == s.toString(),
+            orElse: () => ServiceType.construction,
+          ))
+      .toList();
   return TeamMember(
     id: m['id'] as String,
     name: m['name'] as String,
@@ -48,6 +58,7 @@ TeamMember _fromMap(Map<String, dynamic> m) {
     city: m['city'] as String?,
     phone: m['phone'] as String?,
     isActive: m['is_active'] as bool? ?? true,
+    serviceTypes: serviceTypes,
   );
 }
 
@@ -72,6 +83,15 @@ class ProfilesNotifier extends StateNotifier<List<TeamMember>> {
   }
 
   Future<void> refresh() => _load();
+
+  Future<void> updateServiceTypes(String id, List<ServiceType> types) async {
+    try {
+      await supabase.from('profiles').update({
+        'service_types': types.map((t) => t.name).toList(),
+      }).eq('id', id);
+      await _load();
+    } catch (_) {}
+  }
 }
 
 final profilesProvider = StateNotifierProvider<ProfilesNotifier, List<TeamMember>>(

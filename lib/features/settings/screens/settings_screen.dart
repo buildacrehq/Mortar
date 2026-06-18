@@ -457,27 +457,91 @@ class _TcAvailabilityTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(
-        radius: 18,
-        backgroundColor: tc.isActive
-            ? AppColors.navy.withValues(alpha: 0.1)
-            : Colors.grey.withValues(alpha: 0.15),
-        child: Text(tc.initials,
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: tc.isActive ? AppColors.navy : AppColors.textSecondary)),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: tc.isActive
+                ? AppColors.navy.withValues(alpha: 0.1)
+                : Colors.grey.withValues(alpha: 0.15),
+            child: Text(tc.initials,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: tc.isActive
+                        ? AppColors.navy
+                        : AppColors.textSecondary)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(tc.name,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: tc.isActive
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary)),
+                if (tc.city != null && tc.city!.isNotEmpty)
+                  Text(tc.city!,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                // Service type chips
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: ServiceType.values.map((s) {
+                    final isSelected = tc.serviceTypes.contains(s);
+                    return GestureDetector(
+                      onTap: () {
+                        final updated = isSelected
+                            ? tc.serviceTypes.where((t) => t != s).toList()
+                            : [...tc.serviceTypes, s];
+                        ref
+                            .read(profilesProvider.notifier)
+                            .updateServiceTypes(tc.id, updated);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.gold.withValues(alpha: 0.15)
+                              : AppColors.surface,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.gold
+                                : AppColors.divider,
+                          ),
+                        ),
+                        child: Text(s.label,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isSelected
+                                  ? AppColors.gold
+                                  : AppColors.textSecondary,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            )),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          _AbsentMenu(tc: tc),
+        ],
       ),
-      title: Text(tc.name,
-          style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: tc.isActive ? AppColors.textPrimary : AppColors.textSecondary)),
-      subtitle: Text(tc.city ?? '',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-      trailing: _AbsentMenu(tc: tc),
     );
   }
 }
