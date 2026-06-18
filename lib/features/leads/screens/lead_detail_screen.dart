@@ -53,7 +53,10 @@ class LeadDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
+      body: RefreshIndicator(
+        color: AppColors.navy,
+        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _LeadHeader(lead: lead),
@@ -77,6 +80,7 @@ class LeadDetailScreen extends ConsumerWidget {
           _InternalNotes(lead: lead),
           const SizedBox(height: 100),
         ],
+      ),
       ),
       bottomNavigationBar: _CallBar(lead: lead),
     );

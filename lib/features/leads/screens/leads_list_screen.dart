@@ -753,6 +753,11 @@ class _LeadCard extends ConsumerWidget {
                   _KhataBadge(khata: lead.khataType!),
                 if (lead.planningTimeline != null)
                   _PlanningBadge(timeline: lead.planningTimeline!),
+                if (lead.internalNotes.isNotEmpty)
+                  _InfoPill(
+                    icon: Icons.sticky_note_2_outlined,
+                    label: '${lead.internalNotes.length} note${lead.internalNotes.length > 1 ? 's' : ''}',
+                  ),
               ],
             ),
             if (lead.followupAt != null) ...[
@@ -779,7 +784,9 @@ class _LeadCard extends ConsumerWidget {
                   ),
                   const Spacer(),
                   Text(
-                    _timeAgo(lead.createdAt),
+                    lead.lastContactedAt != null
+                        ? 'Called ${_timeAgo(lead.lastContactedAt!)}'
+                        : 'Added ${_timeAgo(lead.createdAt)}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 11),
                   ),
                 ],

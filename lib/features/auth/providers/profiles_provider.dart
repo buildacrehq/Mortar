@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/main.dart';
@@ -65,6 +66,7 @@ TeamMember _fromMap(Map<String, dynamic> m) {
 class ProfilesNotifier extends StateNotifier<List<TeamMember>> {
   ProfilesNotifier() : super([]) {
     _load();
+    _subscribeRealtime();
   }
 
   Future<void> _load() async {
@@ -72,7 +74,6 @@ class ProfilesNotifier extends StateNotifier<List<TeamMember>> {
       final data = await supabase
           .from('profiles')
           .select()
-          .eq('is_active', true)
           .order('name');
       if (mounted) {
         state = (data as List)
@@ -80,6 +81,18 @@ class ProfilesNotifier extends StateNotifier<List<TeamMember>> {
             .toList();
       }
     } catch (_) {}
+  }
+
+  void _subscribeRealtime() {
+    supabase
+        .channel('profiles_realtime')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'profiles',
+          callback: (_) => _load(),
+        )
+        .subscribe();
   }
 
   Future<void> refresh() => _load();
