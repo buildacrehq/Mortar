@@ -18,6 +18,7 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
   FutureTag? _futureTag;
   final _notesController = TextEditingController();
   DateTime? _followupDate;
+  int _durationMinutes = 0;
   bool _saving = false;
 
   @override
@@ -46,7 +47,7 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
     setState(() => _saving = true);
     ref.read(leadsProvider.notifier).logCall(
           leadId: widget.leadId,
-          durationSeconds: 0, // TODO: real duration from Exotel webhook
+          durationSeconds: _durationMinutes * 60,
           outcome: _outcome!,
           notes: _notesController.text.trim().isEmpty
               ? null
@@ -80,6 +81,8 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
             const SizedBox(height: 16),
             _buildFutureTagSelector(),
           ],
+          const SizedBox(height: 16),
+          _buildDurationRow(),
           const SizedBox(height: 16),
           _buildFollowupRow(),
           const SizedBox(height: 16),
@@ -204,6 +207,58 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
               ),
             );
           }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDurationRow() {
+    final durations = [0, 1, 2, 3, 5, 7, 10, 15, 20, 30];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Call Duration',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontSize: 14)),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: durations.map((min) {
+              final isSelected = _durationMinutes == min;
+              final label = min == 0 ? 'Not set' : '${min}m';
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() => _durationMinutes = min),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.navy : AppColors.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected ? AppColors.navy : AppColors.divider,
+                      ),
+                    ),
+                    child: Text(label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textPrimary,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        )),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );

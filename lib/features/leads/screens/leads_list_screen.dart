@@ -339,18 +339,22 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               scrollDirection: Axis.horizontal,
               children: [
                 _FilterChip(
-                  label: 'All',
+                  label: 'All (${allLeads.length})',
                   selected: _filterStage == null,
                   onTap: () => setState(() => _filterStage = null),
                 ),
                 ...LeadStage.values
                     .where((s) => s != LeadStage.lost)
-                    .map((s) => _FilterChip(
-                          label: s.label,
-                          selected: _filterStage == s,
-                          onTap: () => setState(
-                              () => _filterStage = _filterStage == s ? null : s),
-                        )),
+                    .map((s) {
+                  final count = allLeads.where((l) => l.stage == s).length;
+                  if (count == 0 && _filterStage != s) return const SizedBox.shrink();
+                  return _FilterChip(
+                    label: '${s.label} ($count)',
+                    selected: _filterStage == s,
+                    onTap: () => setState(
+                        () => _filterStage = _filterStage == s ? null : s),
+                  );
+                }),
               ],
             ),
           ),
@@ -745,6 +749,8 @@ class _LeadCard extends ConsumerWidget {
                     icon: Icons.call_outlined,
                     label: '${lead.callLogs.length} call${lead.callLogs.length > 1 ? 's' : ''}',
                   ),
+                if (lead.khataType != null)
+                  _KhataBadge(khata: lead.khataType!),
               ],
             ),
             if (lead.followupAt != null) ...[
@@ -808,6 +814,34 @@ class _LeadCard extends ConsumerWidget {
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return DateFormat('d MMM').format(dt);
+  }
+}
+
+class _KhataBadge extends StatelessWidget {
+  final KhataType khata;
+  const _KhataBadge({required this.khata});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = khata.isQuickStart ? AppColors.stageWon : AppColors.textSecondary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.article_outlined, size: 10, color: color),
+          const SizedBox(width: 3),
+          Text(khata.label,
+              style: TextStyle(
+                  fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
   }
 }
 
