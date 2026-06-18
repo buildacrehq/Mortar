@@ -58,21 +58,25 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Call Recordings')),
-      body: Column(
-        children: [
-          _buildHeader(context, all.length, suspiciousCount),
-          _buildFilters(context),
-          Expanded(
-            child: filtered.isEmpty
-                ? _buildEmpty()
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => _CallCard(record: filtered[i]),
-                  ),
-          ),
-        ],
+      body: RefreshIndicator(
+        color: AppColors.navy,
+        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        child: Column(
+          children: [
+            _buildHeader(context, all.length, suspiciousCount),
+            _buildFilters(context),
+            Expanded(
+              child: filtered.isEmpty
+                  ? _buildEmpty()
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (_, i) => _CallCard(record: filtered[i]),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

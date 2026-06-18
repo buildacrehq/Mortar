@@ -104,7 +104,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reports')),
-      body: ListView(
+      body: RefreshIndicator(
+        color: AppColors.navy,
+        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        child: ListView(
         padding: const EdgeInsets.only(bottom: 60),
         children: [
           _buildPeriodSelector(),
@@ -127,6 +130,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

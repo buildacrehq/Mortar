@@ -111,9 +111,32 @@ class SettingsScreen extends ConsumerWidget {
                 foregroundColor: Colors.red,
                 side: const BorderSide(color: Colors.red),
               ),
-              onPressed: () {
-                ref.read(authProvider.notifier).logout();
-                context.go('/login');
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text('Sign Out?'),
+                    content: const Text('You will need to log in again to access Mortar.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Sign Out'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true && context.mounted) {
+                  ref.read(authProvider.notifier).logout();
+                  context.go('/login');
+                }
               },
             ),
           ),
