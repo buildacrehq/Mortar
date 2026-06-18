@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
+import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/main.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
@@ -84,6 +86,66 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final role = ref.watch(currentUserRoleProvider);
+    final isTelecaller = role == UserRole.telecaller;
+
+    // Telecallers cannot change their own password — security measure
+    if (isTelecaller) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Change Password')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.navy.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.admin_panel_settings_outlined,
+                      size: 36, color: AppColors.navy),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Ask Your Admin',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'For security reasons, password changes must be done by your admin or manager.\n\nContact them to reset your password.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      height: 1.5),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Go Back'),
+                    onPressed: () => context.pop(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.navy,
+                      side: const BorderSide(color: AppColors.navy),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Change Password')),
       body: Form(

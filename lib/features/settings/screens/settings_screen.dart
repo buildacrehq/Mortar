@@ -637,6 +637,19 @@ class _AbsentMenu extends ConsumerWidget {
                 }
               },
             ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _AbsentOption(
+              icon: Icons.email_outlined,
+              title: 'Send Password Reset Email',
+              subtitle: 'Sends a reset link to ${tc.email}',
+              color: AppColors.navy,
+              onTap: () async {
+                Navigator.pop(context);
+                await _sendPasswordReset(context);
+              },
+            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -649,6 +662,27 @@ class _AbsentMenu extends ConsumerWidget {
       await supabase.from('profiles').update({'is_active': false}).eq('id', tc.id);
       ref.read(profilesProvider.notifier).refresh();
     } catch (_) {}
+  }
+
+  Future<void> _sendPasswordReset(BuildContext context) async {
+    try {
+      await supabase.auth.resetPasswordForEmail(tc.email);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Password reset email sent to ${tc.email}'),
+          backgroundColor: AppColors.stageWon,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Failed to send reset email. Check email address.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 }
 
