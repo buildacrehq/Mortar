@@ -614,12 +614,57 @@ class _CallBar extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () => _showStageSelector(context, ref),
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('Update Stage'),
+          if (lead.stage == LeadStage.negotiation)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _markWon(context, ref),
+                icon: const Icon(Icons.emoji_events_outlined, size: 18),
+                label: const Text('Won!'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.stageWon,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _showStageSelector(context, ref),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Update Stage'),
+              ),
             ),
+        ],
+      ),
+    );
+  }
+
+  void _markWon(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Mark as Won? 🏆'),
+        content: Text('Move ${lead.name} to Final Agreement?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.stageWon,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              ref.read(leadsProvider.notifier).updateStage(lead.id, LeadStage.finalAgreement);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('🏆 Deal won! Congratulations!'),
+                backgroundColor: AppColors.stageWon,
+                behavior: SnackBarBehavior.floating,
+              ));
+            },
+            child: const Text('Mark Won'),
           ),
         ],
       ),

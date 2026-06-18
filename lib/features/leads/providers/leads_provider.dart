@@ -155,6 +155,8 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
     String? plotSize,
     String? budget,
     String? notes,
+    KhataType? khataType,
+    PlanningTimeline? planningTimeline,
   }) async {
     _updateLocal(
       id,
@@ -178,7 +180,8 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         lastOutcome: l.lastOutcome,
         futureTag: l.futureTag,
         lostReason: l.lostReason,
-        khataType: l.khataType,
+        khataType: khataType ?? l.khataType,
+        planningTimeline: planningTimeline ?? l.planningTimeline,
         callLogs: l.callLogs,
         internalNotes: l.internalNotes,
       ),
@@ -196,6 +199,8 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         if (plotSize != null) 'plot_size': plotSize,
         if (budget != null) 'budget': budget,
         if (notes != null) 'notes': notes,
+        'khata_type': khataType?.name,
+        'planning_timeline': planningTimeline?.name,
       });
     } catch (_) {
       await _load();

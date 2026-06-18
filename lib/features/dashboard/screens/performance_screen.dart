@@ -4,6 +4,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
 import 'package:buildacre_crm/features/dashboard/providers/performance_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 
 class PerformanceScreen extends ConsumerWidget {
   const PerformanceScreen({super.key});
@@ -16,7 +17,10 @@ class PerformanceScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Telecaller Performance')),
-      body: Column(
+      body: RefreshIndicator(
+        color: AppColors.navy,
+        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        child: Column(
         children: [
           _buildSummaryBar(context, stats.length, totalCallsToday, totalCallsWeek),
           Expanded(
@@ -28,6 +32,7 @@ class PerformanceScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -28,6 +28,8 @@ class _EditLeadScreenState extends ConsumerState<EditLeadScreen> {
   late LeadSource _source;
   late ServiceType _serviceType;
   late City _city;
+  KhataType? _khataType;
+  PlanningTimeline? _planningTimeline;
 
   bool _loaded = false;
   bool _saving = false;
@@ -53,9 +55,11 @@ class _EditLeadScreenState extends ConsumerState<EditLeadScreen> {
     _plotSize = TextEditingController(text: lead.plotSize ?? '');
     _budget   = TextEditingController(text: lead.budget ?? '');
     _notes    = TextEditingController(text: lead.notes ?? '');
-    _source      = lead.source;
-    _serviceType = lead.serviceType;
-    _city        = lead.city;
+    _source          = lead.source;
+    _serviceType     = lead.serviceType;
+    _city            = lead.city;
+    _khataType       = lead.khataType;
+    _planningTimeline = lead.planningTimeline;
     _loaded = true;
   }
 
@@ -179,6 +183,65 @@ class _EditLeadScreenState extends ConsumerState<EditLeadScreen> {
                 ),
               ),
             ]),
+            const SizedBox(height: 20),
+            _buildSection('Khata Type (optional)', [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: KhataType.values.map((k) {
+                  final isSelected = _khataType == k;
+                  final color = k.isQuickStart ? AppColors.stageWon : AppColors.navy;
+                  return GestureDetector(
+                    onTap: () => setState(() => _khataType = isSelected ? null : k),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: isSelected ? color : AppColors.divider, width: isSelected ? 1.5 : 1),
+                      ),
+                      child: Text(k.label,
+                          style: TextStyle(fontSize: 13, color: isSelected ? color : AppColors.textPrimary,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400)),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ]),
+            const SizedBox(height: 20),
+            _buildSection('Planning Timeline (optional)', [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: PlanningTimeline.values.map((t) {
+                  final isSelected = _planningTimeline == t;
+                  final color = t.isUrgent ? Colors.redAccent : AppColors.navy;
+                  return GestureDetector(
+                    onTap: () => setState(() => _planningTimeline = isSelected ? null : t),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: isSelected ? color : AppColors.divider, width: isSelected ? 1.5 : 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(t.emoji, style: const TextStyle(fontSize: 13)),
+                          const SizedBox(width: 5),
+                          Text(t.label,
+                              style: TextStyle(fontSize: 13, color: isSelected ? color : AppColors.textPrimary,
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400)),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ]),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -242,6 +305,8 @@ class _EditLeadScreenState extends ConsumerState<EditLeadScreen> {
           plotSize: _plotSize.text.trim().isEmpty ? null : _plotSize.text.trim(),
           budget: _budget.text.trim().isEmpty ? null : _budget.text.trim(),
           notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+          khataType: _khataType,
+          planningTimeline: _planningTimeline,
         );
 
     if (context.mounted) {
