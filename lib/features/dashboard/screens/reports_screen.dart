@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 enum _Period { week, month, allTime }
 
@@ -76,7 +77,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       );
       tcCallCount[lead.assignedTo] = (tcCallCount[lead.assignedTo] ?? 0) + 1;
     }
-    final tcMap = {for (final t in mockTelecallers) t.id: t};
+    final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
     final bestTcEntry = tcCallCount.entries.isEmpty
         ? null
         : tcCallCount.entries.reduce((a, b) => a.value > b.value ? a : b);
@@ -377,7 +378,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _buildHighlights(BuildContext context, MapEntry<LeadSource, int>? src,
-      TelecallerProfile? tc, int? tcCalls) {
+      TeamMember? tc, int? tcCalls) {
     return Row(
       children: [
         Expanded(

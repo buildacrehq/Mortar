@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 
 class AddLeadScreen extends ConsumerStatefulWidget {
   const AddLeadScreen({super.key});
@@ -45,6 +46,8 @@ class _AddLeadScreenState extends ConsumerState<AddLeadScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
+    final currentUser = ref.read(authProvider);
+
     ref.read(leadsProvider.notifier).addLead(
           name: _nameController.text.trim(),
           phone: _phoneController.text.trim(),
@@ -68,6 +71,7 @@ class _AddLeadScreenState extends ConsumerState<AddLeadScreen> {
               : _notesController.text.trim(),
           khataType: _khataType,
           planningTimeline: _planningTimeline,
+          assignedTo: currentUser?.id,
         );
 
     await Future.delayed(const Duration(milliseconds: 200));

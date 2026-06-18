@@ -8,7 +8,7 @@ import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
-import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 class FollowupCalendarScreen extends ConsumerStatefulWidget {
   const FollowupCalendarScreen({super.key});
@@ -37,7 +37,7 @@ class _FollowupCalendarScreenState
     final leads = ref.watch(leadsProvider);
     final role = ref.watch(currentUserRoleProvider);
     final user = ref.watch(authProvider);
-    final tcMap = {for (final t in mockTelecallers) t.id: t};
+    final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
 
     final myLeads = role == UserRole.telecaller
         ? leads.where((l) => l.assignedTo == user?.id).toList()
@@ -424,7 +424,7 @@ class _FollowupCalendarScreenState
 
 class _FollowupCard extends ConsumerWidget {
   final Lead lead;
-  final TelecallerProfile? tc;
+  final TeamMember? tc;
   final bool isToday;
   final bool isPast;
 

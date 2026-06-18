@@ -283,11 +283,12 @@ class _Avatar extends StatelessWidget {
 }
 
 class _CityChip extends StatelessWidget {
-  final City city;
+  final String? city;
   const _CityChip({required this.city});
 
   @override
   Widget build(BuildContext context) {
+    if (city == null || city!.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -295,7 +296,7 @@ class _CityChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        city.label,
+        city!,
         style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
       ),
     );

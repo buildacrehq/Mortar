@@ -4,7 +4,7 @@ import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/notifications/models/app_notification.dart';
-import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 // Tracks which notification IDs have been read
 final _readIdsProvider = StateProvider<Set<String>>((ref) => {});
@@ -18,7 +18,7 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
     final user = _ref.read(authProvider);
     final role = _ref.read(currentUserRoleProvider);
     final readIds = _ref.read(_readIdsProvider);
-    final tcMap = {for (final t in mockTelecallers) t.id: t};
+    final tcMap = {for (final t in _ref.read(profilesProvider)) t.id: t};
     final now = DateTime.now();
 
     final notifs = <AppNotification>[];

@@ -6,7 +6,7 @@ import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
-import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 class FuturePipelineScreen extends ConsumerStatefulWidget {
   const FuturePipelineScreen({super.key});
@@ -37,7 +37,7 @@ class _FuturePipelineScreenState extends ConsumerState<FuturePipelineScreen>
   @override
   Widget build(BuildContext context) {
     final leads = ref.watch(leadsProvider);
-    final tcMap = {for (final t in mockTelecallers) t.id: t};
+    final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
 
     final futureLeads = leads
         .where((l) => l.futureTag != null)
@@ -254,7 +254,7 @@ class _SummaryChip extends StatelessWidget {
 
 class _FutureCard extends ConsumerWidget {
   final Lead lead;
-  final TelecallerProfile? tc;
+  final TeamMember? tc;
   const _FutureCard({required this.lead, required this.tc});
 
   @override

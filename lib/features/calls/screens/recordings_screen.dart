@@ -6,20 +6,20 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
-import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 // Flat record joining call log + lead context
 class _CallRecord {
   final CallLog log;
   final Lead lead;
-  final TelecallerProfile telecaller;
+  final TeamMember telecaller;
 
   const _CallRecord({required this.log, required this.lead, required this.telecaller});
 }
 
 final _recordingsProvider = Provider<List<_CallRecord>>((ref) {
   final leads = ref.watch(leadsProvider);
-  final tcMap = {for (final tc in mockTelecallers) tc.id: tc};
+  final tcMap = {for (final tc in ref.watch(profilesProvider)) tc.id: tc};
 
   final records = <_CallRecord>[];
   for (final lead in leads) {
@@ -135,10 +135,10 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
                   onTap: () => setState(() => _selectedTcId = null),
                 ),
                 const SizedBox(width: 8),
-                ...mockTelecallers.map((tc) => Padding(
+                ...ref.watch(telecallersProvider).map((tc) => Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: _FilterChip(
-                    label: tc.name.split(' ').first,
+                    label: tc.firstName,
                     selected: _selectedTcId == tc.id,
                     onTap: () => setState(() => _selectedTcId = tc.id),
                   ),

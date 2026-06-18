@@ -6,7 +6,7 @@ import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
-import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 class LostLeadsScreen extends ConsumerStatefulWidget {
   const LostLeadsScreen({super.key});
@@ -23,7 +23,7 @@ class _LostLeadsScreenState extends ConsumerState<LostLeadsScreen> {
   @override
   Widget build(BuildContext context) {
     final leads = ref.watch(leadsProvider);
-    final tcMap = {for (final t in mockTelecallers) t.id: t};
+    final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
 
     final lost = leads.where((l) => l.stage == LeadStage.lost).toList();
 
@@ -304,7 +304,7 @@ class _InsightStat extends StatelessWidget {
 
 class _LostCard extends ConsumerWidget {
   final Lead lead;
-  final TelecallerProfile? tc;
+  final TeamMember? tc;
   const _LostCard({required this.lead, required this.tc});
 
   @override

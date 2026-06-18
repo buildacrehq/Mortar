@@ -6,6 +6,7 @@ import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 const _dailyTarget = 5;
 const _weeklyTarget = 25;
@@ -18,14 +19,19 @@ class MyPerformanceScreen extends ConsumerWidget {
     final user = ref.watch(authProvider);
     final leads = ref.watch(leadsProvider);
 
-    final profile = mockTelecallers.firstWhere(
+    final allMembers = ref.watch(profilesProvider);
+    final profile = allMembers.firstWhere(
       (t) => t.id == user?.id,
-      orElse: () => mockTelecallers.first,
+      orElse: () => TeamMember(
+          id: user?.id ?? '',
+          name: user?.name ?? 'Me',
+          email: user?.email ?? '',
+          role: UserRole.telecaller),
     );
     final stats = computeStats(profile, leads);
 
     // Team rank
-    final allStats = mockTelecallers
+    final allStats = allMembers
         .map((t) => computeStats(t, leads))
         .toList()
       ..sort((a, b) => b.performanceScore.compareTo(a.performanceScore));
@@ -44,7 +50,7 @@ class MyPerformanceScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildProfileHeader(profile, stats, rank),
+          _buildProfileHeader(profile, stats, rank, allMembers.length),
           const SizedBox(height: 16),
           _buildTargets(stats),
           const SizedBox(height: 16),
@@ -62,7 +68,7 @@ class MyPerformanceScreen extends ConsumerWidget {
   }
 
   Widget _buildProfileHeader(
-      TelecallerProfile profile, TelecallerStats stats, int rank) {
+      TeamMember profile, TelecallerStats stats, int rank, int teamSize) {
     final initial = profile.name[0].toUpperCase();
     final scoreColor = stats.performanceScore >= 7
         ? AppColors.stageWon
@@ -109,7 +115,7 @@ class MyPerformanceScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w700)),
                 const SizedBox(height: 3),
                 Text(
-                  profile.city.label,
+                  profile.city ?? '',
                   style: const TextStyle(
                       color: Colors.white60, fontSize: 13),
                 ),
@@ -122,7 +128,7 @@ class MyPerformanceScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     _HeaderChip(
-                      label: '#$rank of ${mockTelecallers.length}',
+                      label: '#$rank of $teamSize',
                       icon: Icons.leaderboard_outlined,
                       highlight: rank == 1,
                     ),

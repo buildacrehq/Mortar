@@ -7,7 +7,7 @@ import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
-import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 // Recent searches — session-only state
 final _recentSearchesProvider = StateProvider<List<String>>((ref) => []);
@@ -48,7 +48,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final leads = ref.watch(leadsProvider);
     final recents = ref.watch(_recentSearchesProvider);
-    final tcMap = {for (final t in mockTelecallers) t.id: t};
+    final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
 
     final results = _query.length >= 2 ? _search(leads, _query) : <Lead>[];
 
@@ -222,7 +222,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildResults(
-      BuildContext context, List<Lead> results, Map<String, TelecallerProfile?> tcMap) {
+      BuildContext context, List<Lead> results, Map<String, TeamMember?> tcMap) {
     if (results.isEmpty) {
       return Center(
         child: Column(
@@ -300,7 +300,7 @@ class _RecentTile extends StatelessWidget {
 class _ResultCard extends StatelessWidget {
   final Lead lead;
   final String query;
-  final TelecallerProfile? tc;
+  final TeamMember? tc;
   final VoidCallback onTap;
   const _ResultCard(
       {required this.lead, required this.query, required this.tc, required this.onTap});
