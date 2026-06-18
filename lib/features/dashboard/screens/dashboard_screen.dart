@@ -105,6 +105,8 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _buildOverdueList(context, overdue),
           ],
+          const SizedBox(height: 16),
+          _buildRecentActivity(context, leads),
           const SizedBox(height: 100),
         ],
       ),
@@ -768,4 +770,135 @@ class _FunnelRow extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildRecentActivity(BuildContext context, List<Lead> leads) {
+    // Flatten all call logs with their lead, sorted by most recent
+    final recentCalls = leads
+        .expand((l) => l.callLogs.map((c) => (lead: l, log: c)))
+        .toList()
+      ..sort((a, b) => b.log.calledAt.compareTo(a.log.calledAt));
+
+    // Flatten all notes with their lead
+    final recentNotes = leads
+        .expand((l) => l.internalNotes.map((n) => (lead: l, note: n)))
+        .toList()
+      ..sort((a, b) => b.note.createdAt.compareTo(a.note.createdAt));
+
+    // Combine into a unified list, take top 8
+    final activities = <({String title, String subtitle, DateTime at, IconData icon, Color color})>[];
+
+    for (final item in recentCalls.take(6)) {
+      final color = switch (item.log.outcome) {
+        CallOutcome.interested    => AppColors.stageWon,
+        CallOutcome.callback      => AppColors.gold,
+        CallOutcome.future        => const Color(0xFF60A5FA),
+        CallOutcome.notReachable  => AppColors.textSecondary,
+        CallOutcome.notInterested => Colors.redAccent,
+      };
+      activities.add((
+        title: '${item.log.outcome.label} — ${item.lead.name}',
+        subtitle: '${item.lead.serviceType.label} · ${item.lead.city.label}',
+        at: item.log.calledAt,
+        icon: Icons.call_outlined,
+        color: color,
+      ));
+    }
+
+    for (final item in recentNotes.take(4)) {
+      activities.add((
+        title: 'Note by ${item.note.authorName}',
+        subtitle: item.note.text,
+        at: item.note.createdAt,
+        icon: Icons.sticky_note_2_outlined,
+        color: AppColors.navy,
+      ));
+    }
+
+    activities.sort((a, b) => b.at.compareTo(a.at));
+    final top = activities.take(8).toList();
+
+    if (top.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 10),
+          child: Text('RECENT ACTIVITY',
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.8)),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: Column(
+            children: top.indexed.map((entry) {
+              final i = entry.$1;
+              final item = entry.$2;
+              final diff = DateTime.now().difference(item.at);
+              final timeAgo = diff.inMinutes < 60
+                  ? '${diff.inMinutes}m ago'
+                  : diff.inHours < 24
+                      ? '${diff.inHours}h ago'
+                      : '${diff.inDays}d ago';
+              return Column(
+                children: [
+                  if (i > 0) const Divider(height: 1, indent: 52),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: item.color.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(item.icon,
+                              size: 16, color: item.color),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.title,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis),
+                              Text(item.subtitle,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        ),
+                        Text(timeAgo,
+                            style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
 }
+

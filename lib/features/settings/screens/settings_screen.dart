@@ -64,26 +64,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _buildTeamSection(context, ref),
             const SizedBox(height: 16),
-            _buildSection(context, 'CRM', [
-              _SettingsTile(
-                icon: Icons.assignment_outlined,
-                label: 'Pipeline Stages',
-                subtitle: '7 stages configured',
-                onTap: () {},
-              ),
-              _SettingsTile(
-                icon: Icons.people_outline,
-                label: 'Telecallers',
-                subtitle: '10 active',
-                onTap: () {},
-              ),
-              _SettingsTile(
-                icon: Icons.chat_outlined,
-                label: 'WhatsApp Templates',
-                subtitle: '6 templates',
-                onTap: () {},
-              ),
-            ]),
+            _buildCrmSection(context, ref),
           ],
           if (isManager) ...[
             const SizedBox(height: 16),
@@ -193,6 +174,32 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildCrmSection(BuildContext context, WidgetRef ref) {
+    final allMembers = ref.watch(profilesProvider);
+    final activeTcs = allMembers.where((m) => m.isTelecaller && m.isActive).length;
+    final totalMembers = allMembers.length;
+    return _buildSection(context, 'CRM', [
+      _SettingsTile(
+        icon: Icons.linear_scale,
+        label: 'Pipeline Stages',
+        subtitle: '9 stages configured',
+        onTap: null,
+      ),
+      _SettingsTile(
+        icon: Icons.people_outline,
+        label: 'Team',
+        subtitle: '$activeTcs active · $totalMembers total',
+        onTap: null,
+      ),
+      _SettingsTile(
+        icon: Icons.chat_outlined,
+        label: 'WhatsApp Templates',
+        subtitle: '5 templates ready',
+        onTap: null,
+      ),
+    ]);
   }
 
   Widget _buildAssignmentSection(BuildContext context, WidgetRef ref) {

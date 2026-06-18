@@ -740,6 +740,11 @@ class _LeadCard extends ConsumerWidget {
                   ),
                 if (lead.lastOutcome != null)
                   _OutcomePill(outcome: lead.lastOutcome!),
+                if (lead.callLogs.isNotEmpty)
+                  _InfoPill(
+                    icon: Icons.call_outlined,
+                    label: '${lead.callLogs.length} call${lead.callLogs.length > 1 ? 's' : ''}',
+                  ),
               ],
             ),
             if (lead.followupAt != null) ...[
