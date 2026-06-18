@@ -39,7 +39,8 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsTile(
               icon: Icons.person_outline,
               label: 'Profile',
-              onTap: () {},
+              subtitle: 'Edit your name and phone number',
+              onTap: () => context.push('/profile'),
             ),
             _SettingsTile(
               icon: Icons.lock_outline,

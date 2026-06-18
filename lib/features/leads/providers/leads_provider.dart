@@ -11,6 +11,9 @@ final _service = LeadsService();
 // Tracks whether the initial load is in progress
 final leadsLoadingProvider = StateProvider<bool>((ref) => true);
 
+// Tracks load error message
+final leadsErrorProvider = StateProvider<String?>((ref) => null);
+
 class LeadsNotifier extends StateNotifier<List<Lead>> {
   LeadsNotifier(this._ref) : super([]) {
     _load();
@@ -22,19 +25,25 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
   // ─── Load ─────────────────────────────────────────────────────────────────
 
   Future<void> _load() async {
+    _ref.read(leadsErrorProvider.notifier).state = null;
     try {
       final leads = await _service.fetchAll();
       if (mounted) {
         state = leads;
         _ref.read(leadsLoadingProvider.notifier).state = false;
       }
-    } catch (_) {
-      if (mounted) _ref.read(leadsLoadingProvider.notifier).state = false;
+    } catch (e) {
+      if (mounted) {
+        _ref.read(leadsLoadingProvider.notifier).state = false;
+        _ref.read(leadsErrorProvider.notifier).state =
+            'Could not connect to server. Check your internet connection.';
+      }
     }
   }
 
   Future<void> refresh() async {
     _ref.read(leadsLoadingProvider.notifier).state = true;
+    _ref.read(leadsErrorProvider.notifier).state = null;
     await _load();
   }
 

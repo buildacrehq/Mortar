@@ -19,6 +19,7 @@ import 'package:buildacre_crm/features/dashboard/screens/reports_screen.dart';
 import 'package:buildacre_crm/features/calls/screens/recordings_screen.dart';
 import 'package:buildacre_crm/features/settings/screens/settings_screen.dart';
 import 'package:buildacre_crm/features/notifications/screens/notifications_screen.dart';
+import 'package:buildacre_crm/features/settings/screens/profile_screen.dart';
 import 'package:buildacre_crm/features/telecaller/screens/my_performance_screen.dart';
 import 'package:buildacre_crm/shared/widgets/main_shell.dart';
 
@@ -125,6 +126,10 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/my-performance',
           builder: (context, state) => const MyPerformanceScreen(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfileScreen(),
         ),
       ],
     ),

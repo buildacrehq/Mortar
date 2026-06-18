@@ -34,6 +34,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   Widget build(BuildContext context) {
     final allLeads = ref.watch(leadsProvider);
     final isLoading = ref.watch(leadsLoadingProvider);
+    final error = ref.watch(leadsErrorProvider);
     final overdueCount = ref.watch(overdueLeadsProvider).length;
     final todayCount = ref.watch(todayLeadsCountProvider);
     final role = ref.watch(currentUserRoleProvider);
@@ -135,6 +136,8 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               backgroundColor: Colors.transparent,
               color: AppColors.gold,
             ),
+          if (error != null)
+            _buildErrorBanner(error, ref),
           Expanded(
             child: RefreshIndicator(
               color: AppColors.navy,
@@ -155,6 +158,34 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner(String message, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => ref.read(leadsProvider.notifier).refresh(),
+      child: Container(
+        width: double.infinity,
+        color: Colors.redAccent.shade100,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            const Icon(Icons.wifi_off_outlined, size: 16, color: Colors.redAccent),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+              ),
+            ),
+            const Text('Retry',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
       ),
     );
   }
