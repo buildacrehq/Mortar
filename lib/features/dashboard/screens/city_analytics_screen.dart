@@ -99,13 +99,17 @@ class _CityAnalyticsScreenState extends ConsumerState<CityAnalyticsScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tab,
-        children: [
-          _OverviewTab(blr: blr, mys: mys, total: leads.length),
-          _SourcesTab(blr: blr, mys: mys),
-          _ServicesTab(blr: blr, mys: mys),
-        ],
+      body: RefreshIndicator(
+        color: AppColors.navy,
+        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        child: TabBarView(
+          controller: _tab,
+          children: [
+            _OverviewTab(blr: blr, mys: mys, total: leads.length),
+            _SourcesTab(blr: blr, mys: mys),
+            _ServicesTab(blr: blr, mys: mys),
+          ],
+        ),
       ),
     );
   }

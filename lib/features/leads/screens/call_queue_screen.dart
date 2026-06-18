@@ -8,23 +8,35 @@ import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 import 'package:buildacre_crm/features/calls/screens/log_outcome_sheet.dart';
 
 enum _QueueSection { overdue, today, uncalled }
 
-class CallQueueScreen extends ConsumerWidget {
+class CallQueueScreen extends ConsumerStatefulWidget {
   const CallQueueScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CallQueueScreen> createState() => _CallQueueScreenState();
+}
+
+class _CallQueueScreenState extends ConsumerState<CallQueueScreen> {
+  String? _selectedTcId; // null = all TCs (manager only)
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authProvider);
     final allLeads = ref.watch(leadsProvider);
     final role = ref.watch(currentUserRoleProvider);
+    final telecallers = ref.watch(telecallersProvider);
+    final isManager = role == UserRole.manager || role == UserRole.admin;
 
-    // Telecallers see only their leads; managers/admins see everyone
+    // Telecallers see only their leads; managers/admins see everyone (with optional filter)
     final myLeads = role == UserRole.telecaller
         ? allLeads.where((l) => l.assignedTo == user?.id).toList()
-        : allLeads;
+        : _selectedTcId != null
+            ? allLeads.where((l) => l.assignedTo == _selectedTcId).toList()
+            : allLeads.toList();
 
     final now = DateTime.now();
     final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
@@ -61,7 +73,6 @@ class CallQueueScreen extends ConsumerWidget {
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
     final totalPending = overdue.length + dueToday.length + uncalled.length;
-    final isManager = role == UserRole.manager || role == UserRole.admin;
 
     // Today's call stats for TC
     final todayLogs = myLeads
@@ -115,6 +126,8 @@ class CallQueueScreen extends ConsumerWidget {
               children: [
                 if (!isManager)
                   _buildTodayStats(context, callsToday, talkMinsToday, myLeads.length),
+                if (isManager && telecallers.isNotEmpty)
+                  _buildTcFilter(context, telecallers),
                 _buildProgress(context, overdue.length, dueToday.length, uncalled.length),
                 if (overdue.isNotEmpty) ...[
                   _SectionHeader(
@@ -154,6 +167,38 @@ class CallQueueScreen extends ConsumerWidget {
                 ],
               ],
             ),
+      ),
+    );
+  }
+
+  Widget _buildTcFilter(BuildContext context, List<TeamMember> telecallers) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            _TcChip(
+              label: 'All',
+              selected: _selectedTcId == null,
+              onTap: () => setState(() => _selectedTcId = null),
+            ),
+            const SizedBox(width: 8),
+            ...telecallers.map((tc) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _TcChip(
+                    label: tc.firstName,
+                    selected: _selectedTcId == tc.id,
+                    onTap: () => setState(
+                        () => _selectedTcId =
+                            _selectedTcId == tc.id ? null : tc.id),
+                    isActive: tc.isActive,
+                  ),
+                )),
+          ],
+        ),
       ),
     );
   }
@@ -600,6 +645,48 @@ class _StatPill extends StatelessWidget {
         Text(label,
             style: const TextStyle(color: Colors.white38, fontSize: 10)),
       ],
+    );
+  }
+}
+
+class _TcChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool isActive;
+  const _TcChip({required this.label, required this.selected, required this.onTap, this.isActive = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.navy : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? AppColors.navy : AppColors.divider),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isActive)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Container(
+                  width: 6, height: 6,
+                  decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle),
+                ),
+              ),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: selected ? Colors.white : AppColors.textPrimary,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400)),
+          ],
+        ),
+      ),
     );
   }
 }

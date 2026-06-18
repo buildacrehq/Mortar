@@ -333,18 +333,12 @@ final leadsProvider = StateNotifierProvider<LeadsNotifier, List<Lead>>(
 );
 
 final leadByIdProvider = Provider.family<Lead?, String>((ref, id) {
-  return ref.watch(leadsProvider).firstWhere((l) => l.id == id,
-      orElse: () => Lead(
-            id: id,
-            name: '',
-            phone: '',
-            source: LeadSource.phone,
-            serviceType: ServiceType.construction,
-            city: City.bangalore,
-            stage: LeadStage.enquiryReceived,
-            assignedTo: '',
-            createdAt: DateTime.now(),
-          ));
+  final leads = ref.watch(leadsProvider);
+  try {
+    return leads.firstWhere((l) => l.id == id);
+  } catch (_) {
+    return null; // Lead not found — caller handles null
+  }
 });
 
 final todayLeadsCountProvider = Provider<int>((ref) {
