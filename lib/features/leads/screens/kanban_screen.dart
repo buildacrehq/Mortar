@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/widgets/mark_as_lost_sheet.dart';
 
 const _activeStages = [
   LeadStage.enquiryReceived,
@@ -391,6 +392,14 @@ class _KanbanCard extends ConsumerWidget {
 
   void _moveNext(BuildContext context, WidgetRef ref) {
     final nextStage = _activeStages[stageIndex + 1];
+    if (nextStage == LeadStage.lost) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => MarkAsLostSheet(leadId: lead.id, leadName: lead.name),
+      );
+      return;
+    }
     ref.read(leadsProvider.notifier).updateStage(lead.id, nextStage);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

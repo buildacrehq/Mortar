@@ -18,12 +18,15 @@ class LeadsListScreen extends ConsumerStatefulWidget {
   ConsumerState<LeadsListScreen> createState() => _LeadsListScreenState();
 }
 
+enum _SortOption { newest, oldest, overdue, stage }
+
 class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   LeadStage? _filterStage;
   String _search = '';
   City? _filterCity;
   LeadSource? _filterSource;
   ServiceType? _filterService;
+  _SortOption _sort = _SortOption.newest;
 
   int get _activeFilterCount =>
       (_filterCity != null ? 1 : 0) +
@@ -52,9 +55,20 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       return matchesStage && matchesCity && matchesSource && matchesService && matchesSearch;
     }).toList()
       ..sort((a, b) {
-        if (a.hasOverdueFollowup && !b.hasOverdueFollowup) return -1;
-        if (!a.hasOverdueFollowup && b.hasOverdueFollowup) return 1;
-        return b.createdAt.compareTo(a.createdAt);
+        switch (_sort) {
+          case _SortOption.newest:
+            if (a.hasOverdueFollowup && !b.hasOverdueFollowup) return -1;
+            if (!a.hasOverdueFollowup && b.hasOverdueFollowup) return 1;
+            return b.createdAt.compareTo(a.createdAt);
+          case _SortOption.oldest:
+            return a.createdAt.compareTo(b.createdAt);
+          case _SortOption.overdue:
+            if (a.hasOverdueFollowup && !b.hasOverdueFollowup) return -1;
+            if (!a.hasOverdueFollowup && b.hasOverdueFollowup) return 1;
+            return b.createdAt.compareTo(a.createdAt);
+          case _SortOption.stage:
+            return a.stage.index.compareTo(b.stage.index);
+        }
       });
 
     return Scaffold(
@@ -65,6 +79,18 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
             icon: const Icon(Icons.search),
             tooltip: 'Search leads',
             onPressed: () => context.push('/leads/search'),
+          ),
+          PopupMenuButton<_SortOption>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort',
+            initialValue: _sort,
+            onSelected: (s) => setState(() => _sort = s),
+            itemBuilder: (_) => [
+              _sortItem(_SortOption.newest, 'Newest First', Icons.arrow_downward),
+              _sortItem(_SortOption.oldest, 'Oldest First', Icons.arrow_upward),
+              _sortItem(_SortOption.overdue, 'Overdue First', Icons.warning_amber_outlined),
+              _sortItem(_SortOption.stage, 'By Pipeline Stage', Icons.linear_scale),
+            ],
           ),
           if (isManager)
             IconButton(
@@ -157,6 +183,27 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
                   ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<_SortOption> _sortItem(_SortOption opt, String label, IconData icon) {
+    return PopupMenuItem(
+      value: opt,
+      child: Row(
+        children: [
+          Icon(icon, size: 18,
+              color: _sort == opt ? AppColors.navy : AppColors.textSecondary),
+          const SizedBox(width: 10),
+          Text(label,
+              style: TextStyle(
+                  color: _sort == opt ? AppColors.navy : AppColors.textPrimary,
+                  fontWeight: _sort == opt ? FontWeight.w600 : FontWeight.w400)),
+          if (_sort == opt) ...[
+            const Spacer(),
+            const Icon(Icons.check, size: 16, color: AppColors.navy),
+          ],
         ],
       ),
     );

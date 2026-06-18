@@ -45,7 +45,7 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsTile(
               icon: Icons.lock_outline,
               label: 'Change Password',
-              onTap: () {},
+              onTap: () => context.push('/change-password'),
             ),
             _SettingsTile(
               icon: Icons.notifications_outlined,
