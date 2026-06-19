@@ -422,19 +422,79 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   }
 
   Widget _buildEmptyState() {
+    final hasFilter = _search.isNotEmpty || _filterStage != null || _activeFilterCount > 0;
+
+    if (hasFilter) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.filter_alt_off, size: 52,
+                color: AppColors.textSecondary.withValues(alpha: 0.3)),
+            const SizedBox(height: 12),
+            const Text('No leads match your filter',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => setState(() {
+                _filterStage = null;
+                _filterCity = null;
+                _filterSource = null;
+                _filterService = null;
+                _search = '';
+              }),
+              child: const Text('Clear all filters',
+                  style: TextStyle(color: AppColors.navy)),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inbox_outlined, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
-          const SizedBox(height: 12),
-          Text(
-            _search.isNotEmpty || _filterStage != null || _activeFilterCount > 0
-                ? 'No leads match your filter'
-                : 'No leads assigned yet',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.navy.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.contacts_outlined,
+                  size: 40, color: AppColors.navy),
+            ),
+            const SizedBox(height: 20),
+            const Text('No leads yet',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
+            const SizedBox(height: 8),
+            const Text(
+              'Leads will appear here once assigned to you, or tap the + button to add one from an inbound call.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.push('/leads/add'),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add First Lead'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.navy,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

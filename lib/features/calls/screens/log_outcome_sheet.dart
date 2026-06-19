@@ -265,7 +265,63 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
   }
 
   Widget _buildFollowupRow() {
-    return GestureDetector(
+    // Quick shortcut dates
+    final shortcuts = [
+      ('Tomorrow', DateTime.now().add(const Duration(days: 1))),
+      ('3 Days', DateTime.now().add(const Duration(days: 3))),
+      ('1 Week', DateTime.now().add(const Duration(days: 7))),
+      ('2 Weeks', DateTime.now().add(const Duration(days: 14))),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Quick shortcut chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: shortcuts.map((s) {
+              final isSelected = _followupDate != null &&
+                  _isSameDay(_followupDate!, s.$2);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() =>
+                      _followupDate = isSelected ? null : s.$2),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.navy
+                          : AppColors.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.navy
+                            : AppColors.divider,
+                      ),
+                    ),
+                    child: Text(s.$1,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textPrimary,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        )),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Custom date picker row
+        GestureDetector(
       onTap: _pickFollowupDate,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -312,8 +368,12 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
           ],
         ),
       ),
+      ],
     );
   }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   Color _outcomeColor(CallOutcome outcome) {
     switch (outcome) {

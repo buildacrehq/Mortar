@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
@@ -6,8 +7,38 @@ import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/notifications/models/app_notification.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
-// Tracks which notification IDs have been read
-final _readIdsProvider = StateProvider<Set<String>>((ref) => {});
+const _prefsKey = 'read_notification_ids';
+
+// Persisted read IDs — loaded from SharedPreferences
+final _readIdsProvider = StateNotifierProvider<_ReadIdsNotifier, Set<String>>(
+  (ref) => _ReadIdsNotifier(),
+);
+
+class _ReadIdsNotifier extends StateNotifier<Set<String>> {
+  _ReadIdsNotifier() : super({}) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_prefsKey) ?? [];
+    if (mounted) state = Set<String>.from(saved);
+  }
+
+  Future<void> add(String id) async {
+    final updated = {...state, id};
+    state = updated;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefsKey, updated.toList());
+  }
+
+  Future<void> addAll(List<String> ids) async {
+    final updated = {...state, ...ids};
+    state = updated;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefsKey, updated.toList());
+  }
+}
 
 class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
   NotificationsNotifier(this._ref) : super([]);
@@ -167,11 +198,11 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
   }
 
   void markRead(String id) {
-    _ref.read(_readIdsProvider.notifier).update((s) => {...s, id});
+    _ref.read(_readIdsProvider.notifier).add(id);
   }
 
   void markAllRead(List<String> ids) {
-    _ref.read(_readIdsProvider.notifier).update((s) => {...s, ...ids});
+    _ref.read(_readIdsProvider.notifier).addAll(ids);
   }
 }
 
