@@ -6,6 +6,7 @@ import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 const _dailyTarget = 5;
@@ -17,7 +18,9 @@ class MyPerformanceScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider);
-    final leads = ref.watch(leadsProvider);
+    // Use analytics for accurate stats across all leads (not just page 1)
+    final analytics = ref.watch(analyticsProvider);
+    final leads = ref.watch(leadsProvider); // still needed for recent call logs display
 
     final allMembers = ref.watch(profilesProvider);
     final profile = allMembers.firstWhere(
@@ -28,11 +31,11 @@ class MyPerformanceScreen extends ConsumerWidget {
           email: user?.email ?? '',
           role: UserRole.telecaller),
     );
-    final stats = computeStats(profile, leads);
+    final stats = computeStatsFromAnalytics(profile, analytics.leads, analytics.callLogs);
 
-    // Team rank
+    // Team rank from analytics
     final allStats = allMembers
-        .map((t) => computeStats(t, leads))
+        .map((t) => computeStatsFromAnalytics(t, analytics.leads, analytics.callLogs))
         .toList()
       ..sort((a, b) => b.performanceScore.compareTo(a.performanceScore));
     final rank =

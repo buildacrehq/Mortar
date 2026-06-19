@@ -4,6 +4,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 import 'package:buildacre_crm/features/notifications/models/app_notification.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
@@ -45,7 +46,9 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
   final Ref _ref;
 
   List<AppNotification> buildNotifications() {
-    final leads = _ref.read(leadsProvider);
+    // Use analytics data for complete picture (not paginated)
+    final analyticsLeads = _ref.read(analyticsProvider).leads;
+    final leads = _ref.read(leadsProvider); // full Lead objects for TC overdue
     final user = _ref.read(authProvider);
     final role = _ref.read(currentUserRoleProvider);
     final readIds = _ref.read(_readIdsProvider);
@@ -109,8 +112,8 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
         }
       }
 
-      // Overdue leads across all TCs (limit to 5 most overdue)
-      final allOverdue = leads
+      // Overdue leads across all TCs — use analytics for complete data
+      final allOverdue = analyticsLeads
           .where((l) => l.hasOverdueFollowup)
           .toList()
         ..sort((a, b) => a.followupAt!.compareTo(b.followupAt!));
@@ -121,7 +124,7 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
           id: 'mgr_overdue_${lead.id}',
           type: NotificationType.alert,
           title: 'Overdue follow-up',
-          body: '${tc?.name.split(" ").first ?? "TC"} · ${lead.name} · $daysAgo d overdue',
+          body: '${tc?.firstName ?? "TC"} · ${lead.city.label} · $daysAgo d overdue',
           createdAt: lead.followupAt!,
           leadId: lead.id,
           isRead: readIds.contains('mgr_overdue_${lead.id}'),
@@ -150,21 +153,19 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
         }
       }
 
-      // Future leads due within 7 days
-      final futureDue = leads.where((l) {
-        if (l.futureTag == null || l.followupAt == null) return false;
+      // Future leads due within 7 days — use analytics for complete data
+      final futureDue = analyticsLeads.where((l) {
+        if (l.followupAt == null) return false;
         final diff = l.followupAt!.difference(now).inDays;
         return diff >= 0 && diff <= 7;
       });
       for (final lead in futureDue) {
-        final tc = tcMap[lead.assignedTo];
         final diff = lead.followupAt!.difference(now).inDays;
         notifs.add(AppNotification(
           id: 'futuredue_${lead.id}',
           type: NotificationType.futureDue,
           title: 'Future lead due soon',
-          body:
-              '${lead.name} · ${lead.futureTag!.label} · ${diff == 0 ? "today" : "in $diff days"}',
+          body: '${lead.city.label} · ${diff == 0 ? "today" : "in $diff days"}',
           createdAt: lead.followupAt!.subtract(const Duration(days: 1)),
           leadId: lead.id,
           isRead: readIds.contains('futuredue_${lead.id}'),
@@ -172,15 +173,15 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
       }
 
       // New leads in last 24h without assignment
-      final unassigned = leads.where((l) =>
-          (l.assignedTo == null || l.assignedTo!.isEmpty) &&
+      final unassigned = analyticsLeads.where((l) =>
+          l.assignedTo.isEmpty &&
           now.difference(l.createdAt).inHours <= 24);
       for (final lead in unassigned) {
         notifs.add(AppNotification(
           id: 'unassigned_${lead.id}',
           type: NotificationType.assignment,
           title: 'Unassigned lead',
-          body: '${lead.name} · ${lead.source.label} · ${lead.serviceType.label}',
+          body: '${lead.source.label} · ${lead.serviceType.label} · ${lead.city.label}',
           createdAt: lead.createdAt,
           leadId: lead.id,
           isRead: readIds.contains('unassigned_${lead.id}'),
@@ -213,6 +214,7 @@ final notificationsProvider =
 
 // Derived: unread count — watches leads + readIds to stay reactive
 final unreadCountProvider = Provider<int>((ref) {
+  ref.watch(analyticsProvider); // full data for accurate count
   ref.watch(leadsProvider);
   ref.watch(authProvider);
   ref.watch(currentUserRoleProvider);

@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/services/leads_service.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
@@ -23,6 +24,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
   String _query = '';
+  List<Lead> _serverResults = [];
+  bool _searching = false;
+  final _service = LeadsService();
 
   @override
   void initState() {
@@ -37,6 +41,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.dispose();
   }
 
+  Future<void> _runSearch(String q) async {
+    if (q.length < 2) {
+      setState(() { _serverResults = []; _searching = false; });
+      return;
+    }
+    setState(() => _searching = true);
+    try {
+      final results = await _service.search(q);
+      if (mounted && _query == q) {
+        setState(() { _serverResults = results; _searching = false; });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
   void _saveRecent(String q) {
     if (q.trim().length < 2) return;
     final recents = ref.read(_recentSearchesProvider);
@@ -46,11 +66,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final leads = ref.watch(leadsProvider);
     final recents = ref.watch(_recentSearchesProvider);
     final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
 
-    final results = _query.length >= 2 ? _search(leads, _query) : <Lead>[];
+    // Server-side search for accurate results across all leads
+    final results = _serverResults;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -75,7 +95,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
           style: const TextStyle(color: Colors.white, fontSize: 15),
           cursorColor: AppColors.gold,
-          onChanged: (v) => setState(() => _query = v),
+          onChanged: (v) {
+            setState(() => _query = v);
+            _runSearch(v.trim());
+          },
           onSubmitted: (v) {
             if (v.trim().isNotEmpty) _saveRecent(v.trim());
           },
@@ -83,7 +106,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
       body: _query.length < 2
           ? _buildEmptyState(context, recents)
-          : _buildResults(context, results, tcMap),
+          : _searching
+              ? const Center(child: CircularProgressIndicator(color: AppColors.navy))
+              : _buildResults(context, results, tcMap),
     );
   }
 

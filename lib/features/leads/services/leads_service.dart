@@ -134,6 +134,19 @@ class LeadsService {
     return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
   }
 
+  /// Server-side search — searches name, phone, area across ALL leads.
+  Future<List<Lead>> search(String query) async {
+    if (query.trim().length < 2) return [];
+    final q = query.trim().toLowerCase();
+    final data = await supabase
+        .from('leads')
+        .select('*, call_logs(*), lead_notes(*)')
+        .or('name.ilike.%$q%,phone.ilike.%$q%,area.ilike.%$q%,email.ilike.%$q%,budget.ilike.%$q%,notes.ilike.%$q%')
+        .order('created_at', ascending: false)
+        .limit(50);
+    return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+  }
+
   Future<Lead> fetchOne(String id) async {
     final data = await supabase
         .from('leads')
