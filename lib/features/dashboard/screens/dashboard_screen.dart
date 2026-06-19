@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
+import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
 import 'package:buildacre_crm/features/dashboard/providers/performance_provider.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
 import 'package:buildacre_crm/features/notifications/providers/notifications_provider.dart';
 
@@ -15,28 +17,40 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final leads = ref.watch(leadsProvider);
+    // Use analytics provider for accurate stats (all leads, not paginated)
+    final analytics = ref.watch(analyticsProvider);
+    final allLeads = analytics.leads;
+    // Still watch paginated leads for the overdue list widget (needs full Lead objects)
+    final pagedLeads = ref.watch(leadsProvider);
     final overdue = ref.watch(overdueLeadsProvider);
-    final todayCount = ref.watch(todayLeadsCountProvider);
     final tcStats = ref.watch(telecallerStatsProvider);
-
     final unreadNotifs = ref.watch(unreadCountProvider);
+
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayCount = allLeads.where((l) =>
+        l.createdAt.year == now.year &&
+        l.createdAt.month == now.month &&
+        l.createdAt.day == now.day).length;
 
     final byStage = <LeadStage, int>{};
     for (final s in LeadStage.values) {
-      byStage[s] = leads.where((l) => l.stage == s).length;
+      byStage[s] = allLeads.where((l) => l.stage == s).length;
     }
 
     final bySource = <LeadSource, int>{};
     for (final s in LeadSource.values) {
-      bySource[s] = leads.where((l) => l.source == s).length;
+      bySource[s] = allLeads.where((l) => l.source == s).length;
     }
 
-    final totalCalls = leads.fold<int>(0, (sum, l) => sum + l.callLogs.length);
+    final totalCalls = analytics.callLogs.length;
     final wonLeads = byStage[LeadStage.finalAgreement] ?? 0;
-    final conversionRate = leads.isEmpty
+    final conversionRate = allLeads.isEmpty
         ? 0.0
-        : (wonLeads / leads.length * 100);
+        : (wonLeads / allLeads.length * 100);
+
+    // Use paginated leads for recent activity and overdue list (need full Lead objects)
+    final leads = pagedLeads;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,7 +93,12 @@ class DashboardScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         color: AppColors.navy,
-        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        onRefresh: () async {
+          await Future.wait([
+            ref.read(leadsProvider.notifier).refresh(),
+            ref.read(analyticsProvider.notifier).refresh(),
+          ]);
+        },
         child: ListView(
         padding: const EdgeInsets.all(16),
         children: [

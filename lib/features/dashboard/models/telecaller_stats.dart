@@ -1,6 +1,7 @@
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 
 class TelecallerStats {
   final TeamMember profile;
@@ -60,6 +61,7 @@ class TelecallerStats {
   }
 }
 
+/// Compute stats from full analytics data (all leads, not paginated).
 TelecallerStats computeStats(TeamMember profile, List<Lead> allLeads) {
   final now = DateTime.now();
   final todayStart = DateTime(now.year, now.month, now.day);
@@ -77,8 +79,36 @@ TelecallerStats computeStats(TeamMember profile, List<Lead> allLeads) {
     outcomeBreakdown[outcome] = allLogs.where((c) => c.outcome == outcome).length;
   }
 
-  final overdue = myLeads.where((l) => l.hasOverdueFollowup).length;
-  final won = myLeads.where((l) => l.stage == LeadStage.finalAgreement).length;
+  return TelecallerStats(
+    profile: profile,
+    totalLeads: myLeads.length,
+    callsToday: callsToday,
+    callsThisWeek: callsThisWeek,
+    totalCallDurationSeconds: totalDuration,
+    outcomeBreakdown: outcomeBreakdown,
+    overdueFollowups: myLeads.where((l) => l.hasOverdueFollowup).length,
+    wonLeads: myLeads.where((l) => l.stage == LeadStage.finalAgreement).length,
+  );
+}
+
+/// Compute stats from analytics summary (efficient — no full Lead objects needed).
+TelecallerStats computeStatsFromAnalytics(
+    TeamMember profile, List<LeadSummary> leads, List<CallLogSummary> logs) {
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
+
+  final myLeads = leads.where((l) => l.assignedTo == profile.id).toList();
+  final myLogs = logs.where((c) => c.calledBy == profile.id).toList();
+
+  final callsToday = myLogs.where((c) => c.calledAt.isAfter(todayStart)).length;
+  final callsThisWeek = myLogs.where((c) => c.calledAt.isAfter(weekStart)).length;
+  final totalDuration = myLogs.fold<int>(0, (sum, c) => sum + c.durationSeconds);
+
+  final outcomeBreakdown = <CallOutcome, int>{};
+  for (final outcome in CallOutcome.values) {
+    outcomeBreakdown[outcome] = myLogs.where((c) => c.outcome == outcome).length;
+  }
 
   return TelecallerStats(
     profile: profile,
@@ -87,7 +117,7 @@ TelecallerStats computeStats(TeamMember profile, List<Lead> allLeads) {
     callsThisWeek: callsThisWeek,
     totalCallDurationSeconds: totalDuration,
     outcomeBreakdown: outcomeBreakdown,
-    overdueFollowups: overdue,
-    wonLeads: won,
+    overdueFollowups: myLeads.where((l) => l.hasOverdueFollowup).length,
+    wonLeads: myLeads.where((l) => l.stage == LeadStage.finalAgreement).length,
   );
 }
