@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 
 class MainShell extends ConsumerWidget {
   final Widget child;
@@ -15,7 +16,9 @@ class MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(currentUserRoleProvider);
     final location = GoRouterState.of(context).matchedLocation;
-    final overdueCount = ref.watch(overdueLeadsProvider).length;
+    // Use analytics for accurate overdue count across all leads (not just page 1)
+    final analyticsLeads = ref.watch(analyticsProvider).leads;
+    final overdueCount = analyticsLeads.where((l) => l.hasOverdueFollowup).length;
 
     final tabs = _tabsForRole(role);
     final currentIndex = _indexFor(location, tabs);

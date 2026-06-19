@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 enum _Period { week, month, allTime }
@@ -21,7 +22,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final leads = ref.watch(leadsProvider);
+    // Use analytics provider — sees ALL leads regardless of pagination
+    final analytics = ref.watch(analyticsProvider);
+    final leads = analytics.leads;
+    final allCallLogs = analytics.callLogs;
     final now = DateTime.now();
 
     DateTime? since;
@@ -42,10 +46,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         ? leads
         : leads.where((l) => l.createdAt.isAfter(since!)).toList();
 
-    final allLogs = leads.expand((l) => l.callLogs).toList();
     final periodLogs = since == null
-        ? allLogs
-        : allLogs.where((c) => c.calledAt.isAfter(since!)).toList();
+        ? allCallLogs
+        : allCallLogs.where((c) => c.calledAt.isAfter(since!)).toList();
 
     // Metrics
     final newLeads = filtered.length;
@@ -71,11 +74,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     // Best telecaller by calls in period
     final tcCallCount = <String, int>{};
     for (final log in periodLogs) {
-      final lead = leads.firstWhere(
-        (l) => l.callLogs.any((c) => c.id == log.id),
-        orElse: () => leads.first,
-      );
-      tcCallCount[lead.assignedTo] = (tcCallCount[lead.assignedTo] ?? 0) + 1;
+      // calledBy = TC's profile ID stored on the call log
+      if (log.calledBy.isNotEmpty) {
+        tcCallCount[log.calledBy] = (tcCallCount[log.calledBy] ?? 0) + 1;
+      }
     }
     final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
     final bestTcEntry = tcCallCount.entries.isEmpty
@@ -106,7 +108,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       appBar: AppBar(title: const Text('Reports')),
       body: RefreshIndicator(
         color: AppColors.navy,
-        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        onRefresh: () => ref.read(analyticsProvider.notifier).refresh(),
         child: ListView(
         padding: const EdgeInsets.only(bottom: 60),
         children: [

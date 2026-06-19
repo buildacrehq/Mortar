@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
@@ -290,10 +291,26 @@ class _LeadDetails extends StatelessWidget {
         children: [
           Text('Lead Details', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 14),
-          _DetailRow(
-            icon: Icons.phone_outlined,
-            label: 'Phone',
-            value: isTelecaller ? lead.maskedPhone : lead.phone,
+          GestureDetector(
+            onTap: isTelecaller
+                ? null
+                : () {
+                    Clipboard.setData(ClipboardData(text: lead.phone));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Phone number copied'),
+                      duration: Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                    ));
+                  },
+            child: _DetailRow(
+              icon: Icons.phone_outlined,
+              label: 'Phone',
+              value: isTelecaller ? lead.maskedPhone : lead.phone,
+              trailing: isTelecaller
+                  ? null
+                  : const Icon(Icons.copy_outlined,
+                      size: 14, color: AppColors.textSecondary),
+            ),
           ),
           if (lead.email != null)
             _DetailRow(icon: Icons.email_outlined, label: 'Email', value: lead.email!),
@@ -337,12 +354,14 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
+  final Widget? trailing;
 
   const _DetailRow({
     required this.icon,
     required this.label,
     required this.value,
     this.valueColor,
+    this.trailing,
   });
 
   @override
@@ -374,6 +393,10 @@ class _DetailRow extends StatelessWidget {
                   ),
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 6),
+            trailing!,
+          ],
         ],
       ),
     );

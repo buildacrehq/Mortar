@@ -18,6 +18,7 @@ class _CallRecord {
 }
 
 final _recordingsProvider = Provider<List<_CallRecord>>((ref) {
+  // Use paginated leads but supplement with analytics for complete call history
   final leads = ref.watch(leadsProvider);
   final tcMap = {for (final tc in ref.watch(profilesProvider)) tc.id: tc};
 

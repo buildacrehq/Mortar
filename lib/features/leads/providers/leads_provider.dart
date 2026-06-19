@@ -395,3 +395,5 @@ final overdueLeadsProvider = Provider<List<Lead>>((ref) {
   final leads = ref.watch(leadsProvider);
   return leads.where((l) => l.hasOverdueFollowup).toList();
 });
+
+;
