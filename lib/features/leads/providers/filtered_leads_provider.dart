@@ -45,3 +45,8 @@ final calendarLeadsProvider =
     StateNotifierProvider<_LeadListNotifier, List<Lead>>(
   (ref) => _LeadListNotifier(_service.fetchWithFollowups),
 );
+
+final unassignedLeadsProvider =
+    StateNotifierProvider<_LeadListNotifier, List<Lead>>(
+  (ref) => _LeadListNotifier(_service.fetchUnassigned),
+);

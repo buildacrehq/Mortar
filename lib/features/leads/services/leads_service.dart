@@ -134,6 +134,17 @@ class LeadsService {
     return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
   }
 
+  /// Fetch unassigned leads for assignment screen.
+  Future<List<Lead>> fetchUnassigned() async {
+    final data = await supabase
+        .from('leads')
+        .select('*, call_logs(*), lead_notes(*)')
+        .or('assigned_to.is.null,assigned_to.eq.')
+        .not('stage', 'in', '("lost","finalAgreement")')
+        .order('created_at', ascending: false);
+    return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+  }
+
   /// Server-side search — searches name, phone, area across ALL leads.
   Future<List<Lead>> search(String query) async {
     if (query.trim().length < 2) return [];

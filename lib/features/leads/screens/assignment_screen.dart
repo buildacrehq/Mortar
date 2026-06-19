@@ -4,6 +4,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/filtered_leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
@@ -21,12 +22,10 @@ class _AssignmentScreenState extends ConsumerState<AssignmentScreen> {
   Widget build(BuildContext context) {
     final leads = ref.watch(leadsProvider);
     final telecallers = ref.watch(telecallersProvider);
-
-    final knownIds = telecallers.map((t) => t.id).toSet();
-    final unassigned = leads
-        .where((l) => l.assignedTo.isEmpty || !knownIds.contains(l.assignedTo))
-        .toList()
+    // Use dedicated provider for unassigned — shows all, not just page 1
+    final unassigned = ref.watch(unassignedLeadsProvider)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final knownIds = telecallers.map((t) => t.id).toSet();
 
     final workload = <String, int>{};
     for (final tc in telecallers) {
