@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
@@ -64,6 +65,39 @@ class AnalyticsData {
 class AnalyticsNotifier extends StateNotifier<AnalyticsData> {
   AnalyticsNotifier() : super(const AnalyticsData()) {
     _load();
+    _subscribeRealtime();
+  }
+
+  Timer? _debounce;
+
+  void _subscribeRealtime() {
+    // Auto-refresh analytics when leads or call_logs change (debounced 3s)
+    supabase
+        .channel('analytics_realtime')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'leads',
+          callback: (_) => _debouncedRefresh(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'call_logs',
+          callback: (_) => _debouncedRefresh(),
+        )
+        .subscribe();
+  }
+
+  void _debouncedRefresh() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(seconds: 3), _load);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {

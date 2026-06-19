@@ -10,6 +10,7 @@ import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/notifications/providers/notifications_provider.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 
 class LeadsListScreen extends ConsumerStatefulWidget {
   const LeadsListScreen({super.key});
@@ -40,8 +41,15 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
     final isLoadingMore = ref.watch(leadsLoadingMoreProvider);
     final hasMore = ref.watch(leadsHasMoreProvider);
     final error = ref.watch(leadsErrorProvider);
-    final overdueCount = ref.watch(overdueLeadsProvider).length;
-    final todayCount = ref.watch(todayLeadsCountProvider);
+    // Use analytics for accurate total count (not paginated)
+    final analyticsLeads = ref.watch(analyticsProvider).leads;
+    final totalLeadCount = analyticsLeads.isNotEmpty ? analyticsLeads.length : allLeads.length;
+    final overdueCount = analyticsLeads.where((l) => l.hasOverdueFollowup).length;
+    final now = DateTime.now();
+    final todayCount = analyticsLeads.where((l) =>
+        l.createdAt.year == now.year &&
+        l.createdAt.month == now.month &&
+        l.createdAt.day == now.day).length;
     final role = ref.watch(currentUserRoleProvider);
     final isManager = role == UserRole.manager || role == UserRole.admin;
     final unreadNotifs = ref.watch(unreadCountProvider);
@@ -156,7 +164,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       ),
       body: Column(
         children: [
-          _buildStatsBar(todayCount, overdueCount, allLeads.length),
+          _buildStatsBar(todayCount, overdueCount, totalLeadCount),
           _buildSearchAndFilter(),
           if (isLoading)
             const LinearProgressIndicator(

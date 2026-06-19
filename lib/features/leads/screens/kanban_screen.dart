@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/filtered_leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/mark_as_lost_sheet.dart';
 
 const _activeStages = [
@@ -36,7 +37,8 @@ class _KanbanScreenState extends ConsumerState<KanbanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final leads = ref.watch(leadsProvider);
+    // Use kanban provider — sees ALL pipeline leads, not just page 1
+    final leads = ref.watch(kanbanLeadsProvider);
 
     final byStage = {
       for (final s in _activeStages)

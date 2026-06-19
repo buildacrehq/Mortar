@@ -50,3 +50,17 @@ final unassignedLeadsProvider =
     StateNotifierProvider<_LeadListNotifier, List<Lead>>(
   (ref) => _LeadListNotifier(_service.fetchUnassigned),
 );
+
+/// All active pipeline leads for kanban — fetches all stages except lost/future.
+final kanbanLeadsProvider =
+    StateNotifierProvider<_LeadListNotifier, List<Lead>>(
+  (ref) => _LeadListNotifier(() => _service.fetchByStages([
+        LeadStage.enquiryReceived,
+        LeadStage.telecallerCallDone,
+        LeadStage.meetingAtOffice,
+        LeadStage.siteVisit,
+        LeadStage.quotationSent,
+        LeadStage.negotiation,
+        LeadStage.finalAgreement,
+      ])),
+);

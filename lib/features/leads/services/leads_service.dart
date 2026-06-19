@@ -104,6 +104,17 @@ class LeadsService {
     return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
   }
 
+  /// Fetch leads by multiple stages — for Kanban view.
+  Future<List<Lead>> fetchByStages(List<LeadStage> stages) async {
+    final stageNames = stages.map((s) => '"${s.name}"').join(',');
+    final data = await supabase
+        .from('leads')
+        .select('*, call_logs(*), lead_notes(*)')
+        .filter('stage', 'in', '($stageNames)')
+        .order('created_at', ascending: false);
+    return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+  }
+
   /// Fetch leads by stage — for Lost Leads screen.
   Future<List<Lead>> fetchByStage(LeadStage stage) async {
     final data = await supabase
@@ -131,6 +142,23 @@ class LeadsService {
         .select('*, call_logs(*), lead_notes(*)')
         .not('followup_at', 'is', null)
         .order('followup_at', ascending: true);
+    return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+  }
+
+  /// Fetch all leads with overdue or today's follow-ups — for queue screen.
+  Future<List<Lead>> fetchQueueLeads(String? assignedToId) async {
+    final todayEnd = DateTime.now().add(const Duration(days: 1));
+    var query = supabase
+        .from('leads')
+        .select('*, call_logs(*), lead_notes(*)')
+        .not('followup_at', 'is', null)
+        .lte('followup_at', todayEnd.toUtc().toIso8601String())
+        .not('stage', 'in', '("lost","finalAgreement","future")')
+        .order('followup_at', ascending: true);
+    if (assignedToId != null) {
+      query = query.eq('assigned_to', assignedToId);
+    }
+    final data = await query;
     return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
   }
 
