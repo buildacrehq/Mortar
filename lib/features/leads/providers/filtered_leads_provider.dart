@@ -51,6 +51,21 @@ final unassignedLeadsProvider =
   (ref) => _LeadListNotifier(_service.fetchUnassigned),
 );
 
+/// All overdue follow-up leads — for dashboard overdue list widget.
+final allOverdueLeadsProvider =
+    StateNotifierProvider<_LeadListNotifier, List<Lead>>(
+  (ref) => _LeadListNotifier(() async {
+    final data = await _service.fetchWithFollowups();
+    final now = DateTime.now();
+    return data.where((l) =>
+        l.followupAt != null &&
+        l.followupAt!.isBefore(now) &&
+        l.stage != LeadStage.lost &&
+        l.stage != LeadStage.finalAgreement).toList()
+      ..sort((a, b) => a.followupAt!.compareTo(b.followupAt!));
+  }),
+);
+
 /// All active pipeline leads for kanban — fetches all stages except lost/future.
 final kanbanLeadsProvider =
     StateNotifierProvider<_LeadListNotifier, List<Lead>>(

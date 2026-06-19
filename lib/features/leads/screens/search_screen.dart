@@ -112,28 +112,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  List<Lead> _search(List<Lead> leads, String q) {
-    final lower = q.toLowerCase();
-    return leads.where((l) {
-      return l.name.toLowerCase().contains(lower) ||
-          l.phone.contains(lower) ||
-          (l.area?.toLowerCase().contains(lower) ?? false) ||
-          (l.email?.toLowerCase().contains(lower) ?? false) ||
-          (l.budget?.toLowerCase().contains(lower) ?? false) ||
-          l.serviceType.label.toLowerCase().contains(lower) ||
-          l.city.label.toLowerCase().contains(lower) ||
-          (l.notes?.toLowerCase().contains(lower) ?? false) ||
-          l.internalNotes.any((n) => n.text.toLowerCase().contains(lower)) ||
-          l.callLogs.any((c) => c.notes?.toLowerCase().contains(lower) ?? false);
-    }).toList()
-      ..sort((a, b) {
-        // Exact name match first
-        final aExact = a.name.toLowerCase().startsWith(lower) ? 0 : 1;
-        final bExact = b.name.toLowerCase().startsWith(lower) ? 0 : 1;
-        if (aExact != bExact) return aExact - bExact;
-        return b.createdAt.compareTo(a.createdAt);
-      });
-  }
+  // Removed: in-memory _search() replaced by server-side search via LeadsService.search()
 
   Widget _buildEmptyState(BuildContext context, List<String> recents) {
     return ListView(

@@ -382,14 +382,15 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               scrollDirection: Axis.horizontal,
               children: [
                 _FilterChip(
-                  label: 'All (${allLeads.length})',
+                  label: 'All ($totalLeadCount)',
                   selected: _filterStage == null,
                   onTap: () => setState(() => _filterStage = null),
                 ),
                 ...LeadStage.values
                     .where((s) => s != LeadStage.lost)
                     .map((s) {
-                  final count = allLeads.where((l) => l.stage == s).length;
+                  // Use analytics for accurate per-stage count
+                  final count = analyticsLeads.where((l) => l.stage == s).length;
                   if (count == 0 && _filterStage != s) return const SizedBox.shrink();
                   return _FilterChip(
                     label: '${s.label} ($count)',

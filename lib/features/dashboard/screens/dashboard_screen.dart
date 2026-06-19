@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/filtered_leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
 import 'package:buildacre_crm/features/dashboard/providers/performance_provider.dart';
 import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
@@ -19,9 +20,10 @@ class DashboardScreen extends ConsumerWidget {
     // Use analytics provider for accurate stats (all leads, not paginated)
     final analytics = ref.watch(analyticsProvider);
     final allLeads = analytics.leads;
-    // Still watch paginated leads for the overdue list widget (needs full Lead objects)
+    // Paginated leads for recent activity (needs full Lead objects with call logs)
     final pagedLeads = ref.watch(leadsProvider);
-    final overdue = ref.watch(overdueLeadsProvider);
+    // Complete overdue list from filtered provider (all pages, not just page 1)
+    final overdue = ref.watch(allOverdueLeadsProvider);
     final tcStats = ref.watch(telecallerStatsProvider);
     final unreadNotifs = ref.watch(unreadCountProvider);
 
