@@ -37,6 +37,8 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
   Widget build(BuildContext context) {
     final allLeads = ref.watch(leadsProvider);
     final isLoading = ref.watch(leadsLoadingProvider);
+    final isLoadingMore = ref.watch(leadsLoadingMoreProvider);
+    final hasMore = ref.watch(leadsHasMoreProvider);
     final error = ref.watch(leadsErrorProvider);
     final overdueCount = ref.watch(overdueLeadsProvider).length;
     final todayCount = ref.watch(todayLeadsCountProvider);
@@ -172,14 +174,47 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
                 ? isLoading
                     ? const SizedBox.shrink()
                     : _buildEmptyState()
-                : ListView.separated(
+                : NotificationListener<ScrollNotification>(
+                    onNotification: (scroll) {
+                      // Load more when 200px from bottom
+                      if (scroll.metrics.pixels >=
+                              scroll.metrics.maxScrollExtent - 200 &&
+                          hasMore &&
+                          !isLoadingMore &&
+                          _search.isEmpty &&
+                          _filterStage == null &&
+                          _activeFilterCount == 0) {
+                        ref.read(leadsProvider.notifier).loadMore();
+                      }
+                      return false;
+                    },
+                    child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                    itemCount: filtered.length,
+                    itemCount: filtered.length + (hasMore && _search.isEmpty ? 1 : 0),
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => _LeadCard(
-                      lead: filtered[i],
-                      onTap: () => context.push('/leads/${filtered[i].id}'),
-                    ),
+                    itemBuilder: (_, i) {
+                      if (i == filtered.length) {
+                        // Load more footer
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: isLoadingMore
+                                ? const CircularProgressIndicator(
+                                    color: AppColors.navy, strokeWidth: 2)
+                                : TextButton(
+                                    onPressed: () => ref.read(leadsProvider.notifier).loadMore(),
+                                    child: const Text('Load more leads',
+                                        style: TextStyle(color: AppColors.navy)),
+                                  ),
+                          ),
+                        );
+                      }
+                      return _LeadCard(
+                        lead: filtered[i],
+                        onTap: () => context.push('/leads/${filtered[i].id}'),
+                      );
+                    },
+                  ),
                   ),
             ),
           ),

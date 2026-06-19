@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
@@ -14,37 +15,69 @@ final leadsLoadingProvider = StateProvider<bool>((ref) => true);
 // Tracks load error message
 final leadsErrorProvider = StateProvider<String?>((ref) => null);
 
+// Tracks whether more pages are available
+final leadsHasMoreProvider = StateProvider<bool>((ref) => true);
+
+// Tracks whether a "load more" fetch is in progress
+final leadsLoadingMoreProvider = StateProvider<bool>((ref) => false);
+
 class LeadsNotifier extends StateNotifier<List<Lead>> {
   LeadsNotifier(this._ref) : super([]) {
-    _load();
+    _loadPage(0);
     _subscribeRealtime();
   }
 
   final Ref _ref;
+  int _currentPage = 0;
+  Timer? _debounce;
 
-  // ─── Load ─────────────────────────────────────────────────────────────────
+  // ─── Paginated Load ────────────────────────────────────────────────────────
 
-  Future<void> _load() async {
+  Future<void> _loadPage(int page) async {
     _ref.read(leadsErrorProvider.notifier).state = null;
     try {
-      final leads = await _service.fetchAll();
-      if (mounted) {
-        state = leads;
-        _ref.read(leadsLoadingProvider.notifier).state = false;
+      final result = await _service.fetchPage(page);
+      if (!mounted) return;
+      if (page == 0) {
+        state = result.leads;
+      } else {
+        // Append next page, avoiding duplicates
+        final existingIds = state.map((l) => l.id).toSet();
+        final newLeads = result.leads.where((l) => !existingIds.contains(l.id)).toList();
+        state = [...state, ...newLeads];
       }
+      _currentPage = page;
+      _ref.read(leadsHasMoreProvider.notifier).state = result.hasMore;
+      _ref.read(leadsLoadingProvider.notifier).state = false;
+      _ref.read(leadsLoadingMoreProvider.notifier).state = false;
     } catch (e) {
       if (mounted) {
         _ref.read(leadsLoadingProvider.notifier).state = false;
+        _ref.read(leadsLoadingMoreProvider.notifier).state = false;
         _ref.read(leadsErrorProvider.notifier).state =
             'Could not connect to server. Check your internet connection.';
       }
     }
   }
 
+  /// Called when user scrolls to bottom — loads next page
+  Future<void> loadMore() async {
+    if (_ref.read(leadsLoadingMoreProvider) || !_ref.read(leadsHasMoreProvider)) return;
+    _ref.read(leadsLoadingMoreProvider.notifier).state = true;
+    await _loadPage(_currentPage + 1);
+  }
+
   Future<void> refresh() async {
     _ref.read(leadsLoadingProvider.notifier).state = true;
     _ref.read(leadsErrorProvider.notifier).state = null;
-    await _load();
+    _ref.read(leadsHasMoreProvider.notifier).state = true;
+    await _loadPage(0);
+  }
+
+  // Debounced reload — prevents thrashing when many leads update at once
+  void _debouncedReload() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(seconds: 2), () => _loadPage(0));
   }
 
   void _subscribeRealtime() {
@@ -54,21 +87,27 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'leads',
-          callback: (_) => _load(),
+          callback: (_) => _debouncedReload(),
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'call_logs',
-          callback: (_) => _load(),
+          callback: (_) => _debouncedReload(),
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'lead_notes',
-          callback: (_) => _load(),
+          callback: (_) => _debouncedReload(),
         )
         .subscribe();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
   // ─── Local helper ─────────────────────────────────────────────────────────

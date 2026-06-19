@@ -79,7 +79,23 @@ LeadNote _noteFromMap(Map<String, dynamic> m) => LeadNote(
 
 // ─── Supabase operations ──────────────────────────────────────────────────────
 
+const _pageSize = 25;
+
 class LeadsService {
+  /// Fetch a page of leads. Returns list and whether more pages exist.
+  Future<({List<Lead> leads, bool hasMore})> fetchPage(int page) async {
+    final from = page * _pageSize;
+    final to = from + _pageSize - 1;
+    final data = await supabase
+        .from('leads')
+        .select('*, call_logs(*), lead_notes(*)')
+        .order('created_at', ascending: false)
+        .range(from, to);
+    final leads = (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+    return (leads: leads, hasMore: leads.length == _pageSize);
+  }
+
+  /// Fetch all leads — used for stats/performance screens only.
   Future<List<Lead>> fetchAll() async {
     final data = await supabase
         .from('leads')
