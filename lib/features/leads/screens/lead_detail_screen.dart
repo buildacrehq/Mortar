@@ -26,6 +26,18 @@ class LeadDetailScreen extends ConsumerWidget {
     final lead = ref.watch(leadByIdProvider(leadId));
     final role = ref.watch(currentUserRoleProvider);
     final isTelecaller = role == UserRole.telecaller;
+
+    // Show mutation errors as snackbars
+    ref.listen(leadsMutationErrorProvider, (_, error) {
+      if (error != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ));
+        ref.read(leadsMutationErrorProvider.notifier).state = null;
+      }
+    });
     final assignedMember = lead != null && lead.assignedTo.isNotEmpty
         ? ref.watch(memberByIdProvider(lead.assignedTo))
         : null;

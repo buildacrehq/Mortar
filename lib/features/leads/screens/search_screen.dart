@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
-import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/services/leads_service.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
@@ -112,7 +111,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  // Removed: in-memory _search() replaced by server-side search via LeadsService.search()
 
   Widget _buildEmptyState(BuildContext context, List<String> recents) {
     return ListView(

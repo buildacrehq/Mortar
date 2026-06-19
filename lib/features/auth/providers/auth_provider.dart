@@ -3,6 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/main.dart';
 
+/// True while the initial auth check + profile load is in progress.
+/// Prevents login screen flash when user is already logged in.
+final authLoadingProvider = StateProvider<bool>((ref) => true);
+
 class AppUser {
   final String id;
   final String name;
@@ -20,15 +24,20 @@ class AppUser {
 }
 
 class AuthNotifier extends StateNotifier<AppUser?> {
-  AuthNotifier() : super(null) {
+  AuthNotifier(this._ref) : super(null) {
     _init();
   }
+
+  final Ref _ref;
 
   void _init() {
     try {
       final session = supabase.auth.currentSession;
       if (session != null) {
         _loadProfile(session.user.id);
+      } else {
+        // No session — mark loading done so login screen shows immediately
+        _ref.read(authLoadingProvider.notifier).state = false;
       }
 
       supabase.auth.onAuthStateChange.listen((data) {
@@ -53,6 +62,7 @@ class AuthNotifier extends StateNotifier<AppUser?> {
           .eq('id', userId)
           .single();
 
+
       final roleStr = data['role'] as String;
       final role = switch (roleStr) {
         'admin'      => UserRole.admin,
@@ -69,6 +79,9 @@ class AuthNotifier extends StateNotifier<AppUser?> {
       );
     } catch (e) {
       state = null;
+    } finally {
+      // Always mark loading done after profile attempt
+      if (mounted) _ref.read(authLoadingProvider.notifier).state = false;
     }
   }
 
@@ -93,7 +106,7 @@ class AuthNotifier extends StateNotifier<AppUser?> {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AppUser?>(
-  (ref) => AuthNotifier(),
+  (ref) => AuthNotifier(ref),
 );
 
 final currentUserRoleProvider = Provider<UserRole>((ref) {

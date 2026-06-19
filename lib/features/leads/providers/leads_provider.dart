@@ -15,6 +15,9 @@ final leadsLoadingProvider = StateProvider<bool>((ref) => true);
 // Tracks load error message
 final leadsErrorProvider = StateProvider<String?>((ref) => null);
 
+// Tracks mutation errors (add/update/assign operations)
+final leadsMutationErrorProvider = StateProvider<String?>((ref) => null);
+
 // Tracks whether more pages are available
 final leadsHasMoreProvider = StateProvider<bool>((ref) => true);
 
@@ -175,6 +178,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         if (lostReason != null) 'lost_reason': lostReason.name,
       });
     } catch (_) {
+      _ref.read(leadsMutationErrorProvider.notifier).state = 'Stage update failed. Check your connection.';
       await _load();
     }
   }
