@@ -47,10 +47,20 @@ class TeamSettingsNotifier extends StateNotifier<AssignmentStrategy> {
 
   Future<void> _load() async {
     try {
-      final data = await supabase
+      // Fetch row — if none exists, create a default one
+      final rows = await supabase
           .from('team_settings')
           .select('assignment_strategy')
-          .single();
+          .limit(1);
+
+      if ((rows as List).isEmpty) {
+        // First time setup — insert default row
+        await supabase.from('team_settings')
+            .insert({'assignment_strategy': 'linear'});
+        return;
+      }
+
+      final data = rows.first as Map<String, dynamic>;
       final str = data['assignment_strategy'] as String? ?? 'linear';
       final strategy = AssignmentStrategy.values.firstWhere(
         (s) => s.name == str,
@@ -63,16 +73,12 @@ class TeamSettingsNotifier extends StateNotifier<AssignmentStrategy> {
   Future<void> setStrategy(AssignmentStrategy strategy) async {
     state = strategy;
     try {
-      await supabase
-          .from('team_settings')
-          .update({'assignment_strategy': strategy.name, 'updated_at': DateTime.now().toUtc().toIso8601String()})
-          .eq('id', await _getSettingsId());
+      // Upsert — works whether row exists or not
+      await supabase.from('team_settings').upsert({
+        'assignment_strategy': strategy.name,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
     } catch (_) {}
-  }
-
-  Future<String> _getSettingsId() async {
-    final data = await supabase.from('team_settings').select('id').single();
-    return data['id'] as String;
   }
 }
 

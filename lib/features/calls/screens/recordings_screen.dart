@@ -6,6 +6,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/filtered_leads_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 // Flat record joining call log + lead context
@@ -18,16 +19,32 @@ class _CallRecord {
 }
 
 final _recordingsProvider = Provider<List<_CallRecord>>((ref) {
-  // Use paginated leads but supplement with analytics for complete call history
-  final leads = ref.watch(leadsProvider);
+  // Combine all loaded lead sources for maximum coverage
+  final pagedLeads = ref.watch(leadsProvider);
+  final kanbanLeads = ref.watch(kanbanLeadsProvider);
   final tcMap = {for (final tc in ref.watch(profilesProvider)) tc.id: tc};
 
+  // Merge all leads, deduplicate by ID
+  final allLeads = <String, Lead>{};
+  for (final l in [...pagedLeads, ...kanbanLeads]) {
+    allLeads[l.id] = l;
+  }
+
   final records = <_CallRecord>[];
-  for (final lead in leads) {
+  for (final lead in allLeads.values) {
+    if (lead.callLogs.isEmpty) continue;
     final tc = tcMap[lead.assignedTo];
-    if (tc == null) continue;
     for (final log in lead.callLogs) {
-      records.add(_CallRecord(log: log, lead: lead, telecaller: tc));
+      records.add(_CallRecord(
+        log: log,
+        lead: lead,
+        telecaller: tc ?? TeamMember(
+          id: lead.assignedTo,
+          name: 'Unknown',
+          email: '',
+          role: UserRole.telecaller,
+        ),
+      ));
     }
   }
   records.sort((a, b) => b.log.calledAt.compareTo(a.log.calledAt));
