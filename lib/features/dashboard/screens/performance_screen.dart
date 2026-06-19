@@ -4,7 +4,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
 import 'package:buildacre_crm/features/dashboard/providers/performance_provider.dart';
-import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
 enum _Period { thisWeek, lastWeek, thisMonth, allTime }
@@ -32,10 +32,12 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allLeads = ref.watch(leadsProvider);
+    // Use analytics for accurate stats across ALL leads
+    final analytics = ref.watch(analyticsProvider);
+    final allLeads = analytics.leads;
+    final allCallLogs = analytics.callLogs;
     final telecallers = ref.watch(telecallersProvider);
 
-    // Filter call logs by period
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final DateTime periodStart;
@@ -54,11 +56,10 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
         ? todayStart.subtract(Duration(days: now.weekday - 1))
         : now;
 
-    // Compute stats using period-filtered leads
     final stats = telecallers.map((tc) {
       final myLeads = allLeads.where((l) => l.assignedTo == tc.id).toList();
-      final allLogs = myLeads.expand((l) => l.callLogs).toList();
-      final periodLogs = allLogs
+      final myLogs = allCallLogs.where((c) => c.calledBy == tc.id).toList();
+      final periodLogs = myLogs
           .where((c) => c.calledAt.isAfter(periodStart) && c.calledAt.isBefore(periodEnd))
           .toList();
       final totalDuration = periodLogs.fold<int>(0, (s, c) => s + c.durationSeconds);
@@ -69,7 +70,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
       return TelecallerStats(
         profile: tc,
         totalLeads: myLeads.length,
-        callsToday: allLogs.where((c) => c.calledAt.isAfter(todayStart)).length,
+        callsToday: myLogs.where((c) => c.calledAt.isAfter(todayStart)).length,
         callsThisWeek: periodLogs.length,
         totalCallDurationSeconds: totalDuration,
         outcomeBreakdown: outcomes,
@@ -85,7 +86,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
       appBar: AppBar(title: const Text('Telecaller Performance')),
       body: RefreshIndicator(
         color: AppColors.navy,
-        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        onRefresh: () => ref.read(analyticsProvider.notifier).refresh(),
         child: Column(
         children: [
           // Period filter

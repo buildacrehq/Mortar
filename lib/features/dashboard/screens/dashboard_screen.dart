@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
-import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
 import 'package:buildacre_crm/features/dashboard/providers/performance_provider.dart';
@@ -49,7 +48,8 @@ class DashboardScreen extends ConsumerWidget {
         ? 0.0
         : (wonLeads / allLeads.length * 100);
 
-    // Use paginated leads for recent activity and overdue list (need full Lead objects)
+    // pagedLeads used for recent activity and overdue list (need full Lead objects)
+    // allLeads (analytics) used for accurate counts in banners and stats
     final leads = pagedLeads;
 
     return Scaffold(
