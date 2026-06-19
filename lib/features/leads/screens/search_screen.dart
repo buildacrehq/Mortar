@@ -60,7 +60,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           controller: _controller,
           focusNode: _focus,
           decoration: InputDecoration(
-            hintText: 'Search by name, phone, area…',
+            hintText: 'Search name, phone, area, notes…',
             hintStyle: const TextStyle(color: Colors.white54, fontSize: 15),
             border: InputBorder.none,
             suffixIcon: _query.isNotEmpty
@@ -96,7 +96,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           (l.email?.toLowerCase().contains(lower) ?? false) ||
           (l.budget?.toLowerCase().contains(lower) ?? false) ||
           l.serviceType.label.toLowerCase().contains(lower) ||
-          l.city.label.toLowerCase().contains(lower);
+          l.city.label.toLowerCase().contains(lower) ||
+          (l.notes?.toLowerCase().contains(lower) ?? false) ||
+          l.internalNotes.any((n) => n.text.toLowerCase().contains(lower)) ||
+          l.callLogs.any((c) => c.notes?.toLowerCase().contains(lower) ?? false);
     }).toList()
       ..sort((a, b) {
         // Exact name match first

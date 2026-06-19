@@ -5,15 +5,81 @@ import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
 import 'package:buildacre_crm/features/dashboard/providers/performance_provider.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
-class PerformanceScreen extends ConsumerWidget {
+enum _Period { thisWeek, lastWeek, thisMonth, allTime }
+
+extension _PeriodExt on _Period {
+  String get label {
+    switch (this) {
+      case _Period.thisWeek:  return 'This Week';
+      case _Period.lastWeek:  return 'Last Week';
+      case _Period.thisMonth: return 'This Month';
+      case _Period.allTime:   return 'All Time';
+    }
+  }
+}
+
+class PerformanceScreen extends ConsumerStatefulWidget {
   const PerformanceScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final stats = ref.watch(telecallerStatsProvider);
-    final totalCallsToday = stats.fold(0, (s, t) => s + t.callsToday);
-    final totalCallsWeek = stats.fold(0, (s, t) => s + t.callsThisWeek);
+  ConsumerState<PerformanceScreen> createState() => _PerformanceScreenState();
+}
+
+class _PerformanceScreenState extends ConsumerState<PerformanceScreen> {
+  _Period _period = _Period.thisWeek;
+
+  @override
+  Widget build(BuildContext context) {
+    final allLeads = ref.watch(leadsProvider);
+    final telecallers = ref.watch(telecallersProvider);
+
+    // Filter call logs by period
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final DateTime periodStart;
+    switch (_period) {
+      case _Period.thisWeek:
+        periodStart = todayStart.subtract(Duration(days: now.weekday - 1));
+      case _Period.lastWeek:
+        final thisWeekStart = todayStart.subtract(Duration(days: now.weekday - 1));
+        periodStart = thisWeekStart.subtract(const Duration(days: 7));
+      case _Period.thisMonth:
+        periodStart = DateTime(now.year, now.month, 1);
+      case _Period.allTime:
+        periodStart = DateTime(2000);
+    }
+    final periodEnd = _period == _Period.lastWeek
+        ? todayStart.subtract(Duration(days: now.weekday - 1))
+        : now;
+
+    // Compute stats using period-filtered leads
+    final stats = telecallers.map((tc) {
+      final myLeads = allLeads.where((l) => l.assignedTo == tc.id).toList();
+      final allLogs = myLeads.expand((l) => l.callLogs).toList();
+      final periodLogs = allLogs
+          .where((c) => c.calledAt.isAfter(periodStart) && c.calledAt.isBefore(periodEnd))
+          .toList();
+      final totalDuration = periodLogs.fold<int>(0, (s, c) => s + c.durationSeconds);
+      final outcomes = <CallOutcome, int>{};
+      for (final o in CallOutcome.values) {
+        outcomes[o] = periodLogs.where((c) => c.outcome == o).length;
+      }
+      return TelecallerStats(
+        profile: tc,
+        totalLeads: myLeads.length,
+        callsToday: allLogs.where((c) => c.calledAt.isAfter(todayStart)).length,
+        callsThisWeek: periodLogs.length,
+        totalCallDurationSeconds: totalDuration,
+        outcomeBreakdown: outcomes,
+        overdueFollowups: myLeads.where((l) => l.hasOverdueFollowup).length,
+        wonLeads: myLeads.where((l) => l.stage == LeadStage.finalAgreement).length,
+      );
+    }).toList()
+      ..sort((a, b) => b.performanceScore.compareTo(a.performanceScore));
+
+    final totalCalls = stats.fold(0, (s, t) => s + t.callsThisWeek);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Telecaller Performance')),
@@ -22,7 +88,39 @@ class PerformanceScreen extends ConsumerWidget {
         onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
         child: Column(
         children: [
-          _buildSummaryBar(context, stats.length, totalCallsToday, totalCallsWeek),
+          // Period filter
+          Container(
+            color: AppColors.navy,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _Period.values.map((p) {
+                  final isSelected = _period == p;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _period = p),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.gold : Colors.white12,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(p.label,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: isSelected ? Colors.white : Colors.white70,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400)),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          _buildSummaryBar(context, stats.length, totalCalls, totalCalls),
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.all(16),

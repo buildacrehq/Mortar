@@ -804,7 +804,9 @@ class _LeadCard extends ConsumerWidget {
                   ),
                 if (lead.lastOutcome != null)
                   _OutcomePill(outcome: lead.lastOutcome!),
-                if (lead.callLogs.isNotEmpty)
+                if (lead.callLogs.isEmpty)
+                  _NewBadge()
+                else
                   _InfoPill(
                     icon: Icons.call_outlined,
                     label: '${lead.callLogs.length} call${lead.callLogs.length > 1 ? 's' : ''}',
@@ -883,6 +885,29 @@ class _LeadCard extends ConsumerWidget {
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return DateFormat('d MMM').format(dt);
+  }
+}
+
+class _NewBadge extends StatelessWidget {
+  const _NewBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.4)),
+      ),
+      child: const Text('NEW',
+          style: TextStyle(
+              fontSize: 9,
+              color: Color(0xFF3B82F6),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5)),
+    );
   }
 }
 
