@@ -104,6 +104,36 @@ class LeadsService {
     return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
   }
 
+  /// Fetch leads by stage — for Lost Leads screen.
+  Future<List<Lead>> fetchByStage(LeadStage stage) async {
+    final data = await supabase
+        .from('leads')
+        .select('*, call_logs(*), lead_notes(*)')
+        .eq('stage', stage.name)
+        .order('last_contacted_at', ascending: false);
+    return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+  }
+
+  /// Fetch future pipeline leads — has futureTag set.
+  Future<List<Lead>> fetchFuturePipeline() async {
+    final data = await supabase
+        .from('leads')
+        .select('*, call_logs(*), lead_notes(*)')
+        .not('future_tag', 'is', null)
+        .order('followup_at', ascending: true);
+    return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+  }
+
+  /// Fetch leads with upcoming follow-ups for calendar view.
+  Future<List<Lead>> fetchWithFollowups() async {
+    final data = await supabase
+        .from('leads')
+        .select('*, call_logs(*), lead_notes(*)')
+        .not('followup_at', 'is', null)
+        .order('followup_at', ascending: true);
+    return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+  }
+
   Future<Lead> fetchOne(String id) async {
     final data = await supabase
         .from('leads')

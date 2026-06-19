@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/filtered_leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
@@ -22,7 +23,7 @@ class _LostLeadsScreenState extends ConsumerState<LostLeadsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final leads = ref.watch(leadsProvider);
+    final leads = ref.watch(lostLeadsProvider);
     final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
 
     final lost = leads.where((l) => l.stage == LeadStage.lost).toList();
@@ -106,9 +107,7 @@ class _LostLeadsScreenState extends ConsumerState<LostLeadsScreen> {
     MapEntry<LeadSource, int>? topSource,
   ) {
     final byCity = <City, int>{};
-    final leads = ref.read(leadsProvider)
-        .where((l) => l.stage == LeadStage.lost);
-    for (final l in leads) {
+    for (final l in ref.read(lostLeadsProvider)) {
       byCity[l.city] = (byCity[l.city] ?? 0) + 1;
     }
 

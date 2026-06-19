@@ -5,6 +5,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/filtered_leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/source_icon.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
@@ -36,7 +37,7 @@ class _FuturePipelineScreenState extends ConsumerState<FuturePipelineScreen>
 
   @override
   Widget build(BuildContext context) {
-    final leads = ref.watch(leadsProvider);
+    final leads = ref.watch(futurePipelineLeadsProvider);
     final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};
 
     final futureLeads = leads

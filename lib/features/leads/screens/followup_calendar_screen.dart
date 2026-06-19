@@ -7,6 +7,7 @@ import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/leads/providers/filtered_leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/stage_badge.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
@@ -34,7 +35,8 @@ class _FollowupCalendarScreenState
 
   @override
   Widget build(BuildContext context) {
-    final leads = ref.watch(leadsProvider);
+    // Use calendarLeadsProvider for accurate data — not affected by list pagination
+    final leads = ref.watch(calendarLeadsProvider);
     final role = ref.watch(currentUserRoleProvider);
     final user = ref.watch(authProvider);
     final tcMap = {for (final t in ref.watch(profilesProvider)) t.id: t};

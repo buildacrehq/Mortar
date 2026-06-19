@@ -4,6 +4,7 @@ import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
+import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 
 // Per-city computed stats
 class _CityStats {
@@ -33,7 +34,7 @@ class _CityStats {
   double get lossRate => total == 0 ? 0 : lost / total * 100;
 }
 
-_CityStats _computeCityStats(City city, List<Lead> leads) {
+_CityStats _computeCityStats(City city, List<LeadSummary> leads) {
   final cl = leads.where((l) => l.city == city).toList();
   final bySource = {for (final s in LeadSource.values) s: cl.where((l) => l.source == s).length};
   final byService = {for (final s in ServiceType.values) s: cl.where((l) => l.serviceType == s).length};
@@ -80,7 +81,7 @@ class _CityAnalyticsScreenState extends ConsumerState<CityAnalyticsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final leads = ref.watch(leadsProvider);
+    final leads = ref.watch(analyticsProvider).leads;
     final blr = _computeCityStats(City.bangalore, leads);
     final mys = _computeCityStats(City.mysore, leads);
 
@@ -101,7 +102,7 @@ class _CityAnalyticsScreenState extends ConsumerState<CityAnalyticsScreen>
       ),
       body: RefreshIndicator(
         color: AppColors.navy,
-        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        onRefresh: () => ref.read(analyticsProvider.notifier).refresh(),
         child: TabBarView(
           controller: _tab,
           children: [
