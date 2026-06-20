@@ -104,6 +104,15 @@ class LeadsService {
     return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
   }
 
+  /// Fetch all leads that have at least one call log — for Recordings screen.
+  Future<List<Lead>> fetchLeadsWithCalls() async {
+    final data = await supabase
+        .from('leads')
+        .select('*, call_logs!inner(*), lead_notes(*)')
+        .order('created_at', ascending: false);
+    return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
+  }
+
   /// Fetch leads by multiple stages — for Kanban view.
   Future<List<Lead>> fetchByStages(List<LeadStage> stages) async {
     final stageNames = stages.map((s) => '"${s.name}"').join(',');
@@ -191,7 +200,7 @@ class LeadsService {
         .select('*, call_logs(*), lead_notes(*)')
         .eq('id', id)
         .single();
-    return leadFromMap(data as Map<String, dynamic>);
+    return leadFromMap(data);
   }
 
   Future<Lead> insert(Lead lead) async {
@@ -200,7 +209,7 @@ class LeadsService {
         .insert(leadToMap(lead))
         .select('*, call_logs(*), lead_notes(*)')
         .single();
-    return leadFromMap(data as Map<String, dynamic>);
+    return leadFromMap(data);
   }
 
   Future<void> updateFields(String id, Map<String, dynamic> fields) async {

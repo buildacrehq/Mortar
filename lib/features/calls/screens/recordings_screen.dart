@@ -19,20 +19,12 @@ class _CallRecord {
 }
 
 final _recordingsProvider = Provider<List<_CallRecord>>((ref) {
-  // Combine all loaded lead sources for maximum coverage
-  final pagedLeads = ref.watch(leadsProvider);
-  final kanbanLeads = ref.watch(kanbanLeadsProvider);
+  // Use dedicated provider — fetches ALL leads that have call logs from Supabase
+  final leads = ref.watch(recordingsLeadsProvider);
   final tcMap = {for (final tc in ref.watch(profilesProvider)) tc.id: tc};
 
-  // Merge all leads, deduplicate by ID
-  final allLeads = <String, Lead>{};
-  for (final l in [...pagedLeads, ...kanbanLeads]) {
-    allLeads[l.id] = l;
-  }
-
   final records = <_CallRecord>[];
-  for (final lead in allLeads.values) {
-    if (lead.callLogs.isEmpty) continue;
+  for (final lead in leads) {
     final tc = tcMap[lead.assignedTo];
     for (final log in lead.callLogs) {
       records.add(_CallRecord(
@@ -78,7 +70,7 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
       appBar: AppBar(title: const Text('Call Recordings')),
       body: RefreshIndicator(
         color: AppColors.navy,
-        onRefresh: () => ref.read(leadsProvider.notifier).refresh(),
+        onRefresh: () => ref.read(recordingsLeadsProvider.notifier).refresh(),
         child: Column(
           children: [
             _buildHeader(context, all.length, suspiciousCount),

@@ -28,7 +28,6 @@ class DashboardScreen extends ConsumerWidget {
     final unreadNotifs = ref.watch(unreadCountProvider);
 
     final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
     final todayCount = allLeads.where((l) =>
         l.createdAt.year == now.year &&
         l.createdAt.month == now.month &&

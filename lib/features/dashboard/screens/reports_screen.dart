@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
-import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
-import 'package:buildacre_crm/features/dashboard/models/telecaller_stats.dart';
 import 'package:buildacre_crm/features/dashboard/providers/analytics_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 

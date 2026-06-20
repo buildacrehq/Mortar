@@ -99,6 +99,15 @@ final allOverdueLeadsProvider =
   ),
 );
 
+/// All leads that have call logs — for Recordings screen (complete history).
+final recordingsLeadsProvider =
+    StateNotifierProvider<_LeadListNotifier, List<Lead>>(
+  (ref) => _LeadListNotifier(
+    _service.fetchLeadsWithCalls,
+    realtimeChannel: 'recordings_leads_rt',
+  ),
+);
+
 final kanbanLeadsProvider =
     StateNotifierProvider<_LeadListNotifier, List<Lead>>(
   (ref) => _LeadListNotifier(

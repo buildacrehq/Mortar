@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
-import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/services/leads_service.dart';
 import 'package:buildacre_crm/main.dart';
@@ -165,7 +164,9 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
     try {
       final saved = await _service.insert(lead);
       state = [saved, ...state];
-    } catch (_) {}
+    } catch (_) {
+      _ref.read(leadsMutationErrorProvider.notifier).state = 'Failed to save lead. Check your connection.';
+    }
   }
 
   // ─── Update Stage ─────────────────────────────────────────────────────────
@@ -246,6 +247,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         'planning_timeline': planningTimeline?.name,
       });
     } catch (_) {
+      _ref.read(leadsMutationErrorProvider.notifier).state = 'Lead update failed. Check your connection.';
       await _loadPage(0);
     }
   }
@@ -340,6 +342,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
       // Reload to get real DB id for the call log
       await _loadPage(0);
     } catch (_) {
+      _ref.read(leadsMutationErrorProvider.notifier).state = 'Call log failed to save. Check your connection.';
       await _loadPage(0);
     }
   }

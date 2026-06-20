@@ -60,7 +60,7 @@ class TeamSettingsNotifier extends StateNotifier<AssignmentStrategy> {
         return;
       }
 
-      final data = rows.first as Map<String, dynamic>;
+      final data = rows.first;
       final str = data['assignment_strategy'] as String? ?? 'linear';
       final strategy = AssignmentStrategy.values.firstWhere(
         (s) => s.name == str,

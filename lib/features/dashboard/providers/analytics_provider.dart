@@ -2,8 +2,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
-import 'package:buildacre_crm/features/leads/models/lead.dart';
-import 'package:buildacre_crm/features/leads/services/leads_service.dart';
 import 'package:buildacre_crm/main.dart';
 
 // ─── Lightweight lead summary for stats (no nested call_logs/notes) ──────────
