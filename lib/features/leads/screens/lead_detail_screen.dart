@@ -64,7 +64,7 @@ class LeadDetailScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.person_pin_outlined),
               tooltip: 'Reassign',
-              onPressed: () => _showReassignSheet(context, ref, lead),
+              onPressed: () => showReassignSheet(context, ref, lead),
             ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -729,7 +729,8 @@ class _CallBar extends ConsumerWidget {
     );
   }
 
-  void _showReassignSheet(BuildContext context, WidgetRef ref, Lead lead) {
+  // moved to top-level: see showReassignSheet below
+  void _unused_showReassignSheet(BuildContext context, WidgetRef ref, Lead lead) {
     final telecallers = ref.read(telecallersProvider);
     final leads = ref.read(leadsProvider);
     final workload = {
@@ -824,6 +825,99 @@ class _CallBar extends ConsumerWidget {
       ),
     );
   }
+}
+
+void showReassignSheet(BuildContext context, WidgetRef ref, Lead lead) {
+  final telecallers = ref.read(telecallersProvider);
+  final leads = ref.read(leadsProvider);
+  final workload = {
+    for (final tc in telecallers)
+      tc.id: leads.where((l) => l.assignedTo == tc.id).length,
+  };
+  final sorted = [...telecallers]
+    ..sort((a, b) => (workload[a.id] ?? 0).compareTo(workload[b.id] ?? 0));
+
+  showModalBottomSheet(
+    context: context,
+    builder: (_) => Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(child: Container(width: 40, height: 4,
+              decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: 16),
+          Text('Reassign ${lead.name}',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          const Text('Sorted by lightest workload',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const SizedBox(height: 16),
+          ...sorted.map((tc) {
+            final count = workload[tc.id] ?? 0;
+            final isCurrent = tc.id == lead.assignedTo;
+            return GestureDetector(
+              onTap: isCurrent ? null : () {
+                ref.read(leadsProvider.notifier).assignLead(lead.id, tc.id);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('${lead.name} → ${tc.firstName}'),
+                  backgroundColor: AppColors.navy,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                ));
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                decoration: BoxDecoration(
+                  color: isCurrent ? AppColors.navy.withValues(alpha: 0.05) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isCurrent ? AppColors.navy : AppColors.divider,
+                    width: isCurrent ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 15,
+                      backgroundColor: AppColors.navy.withValues(alpha: 0.1),
+                      child: Text(tc.initials,
+                          style: const TextStyle(fontSize: 11, color: AppColors.navy, fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(tc.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+                    Text('$count leads', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    if (isCurrent) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.navy.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text('Current', style: TextStyle(fontSize: 10, color: AppColors.navy, fontWeight: FontWeight.w600)),
+                      ),
+                    ] else ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(color: AppColors.gold, borderRadius: BorderRadius.circular(6)),
+                        child: const Text('Assign', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
 }
 
 class _StageSelectorSheet extends StatelessWidget {

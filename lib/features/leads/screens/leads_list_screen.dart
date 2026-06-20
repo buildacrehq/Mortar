@@ -165,7 +165,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
       body: Column(
         children: [
           _buildStatsBar(todayCount, overdueCount, totalLeadCount),
-          _buildSearchAndFilter(),
+          _buildSearchAndFilter(analyticsLeads, totalLeadCount),
           if (isLoading)
             const LinearProgressIndicator(
               minHeight: 2,
@@ -297,7 +297,7 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
     );
   }
 
-  Widget _buildSearchAndFilter() {
+  Widget _buildSearchAndFilter(List analyticsLeads, int totalLeadCount) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),

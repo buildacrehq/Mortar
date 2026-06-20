@@ -179,7 +179,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
       });
     } catch (_) {
       _ref.read(leadsMutationErrorProvider.notifier).state = 'Stage update failed. Check your connection.';
-      await _load();
+      await _loadPage(0);
     }
   }
 
@@ -246,7 +246,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         'planning_timeline': planningTimeline?.name,
       });
     } catch (_) {
-      await _load();
+      await _loadPage(0);
     }
   }
 
@@ -259,7 +259,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         'assigned_to': telecallerId.isNotEmpty ? telecallerId : null,
       });
     } catch (_) {
-      await _load();
+      await _loadPage(0);
     }
   }
 
@@ -270,7 +270,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
     try {
       await _service.updateFields(id, {'planning_timeline': timeline?.name});
     } catch (_) {
-      await _load();
+      await _loadPage(0);
     }
   }
 
@@ -283,7 +283,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         'khata_type': khataType?.name,
       });
     } catch (_) {
-      await _load();
+      await _loadPage(0);
     }
   }
 
@@ -338,9 +338,9 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         if (futureTag != null) 'future_tag': futureTag.name,
       });
       // Reload to get real DB id for the call log
-      await _load();
+      await _loadPage(0);
     } catch (_) {
-      await _load();
+      await _loadPage(0);
     }
   }
 
@@ -364,7 +364,7 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
         text: text,
       );
     } catch (_) {
-      await _load();
+      await _loadPage(0);
     }
   }
 }
@@ -399,5 +399,3 @@ final overdueLeadsProvider = Provider<List<Lead>>((ref) {
   final leads = ref.watch(leadsProvider);
   return leads.where((l) => l.hasOverdueFollowup).toList();
 });
-
-;

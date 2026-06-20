@@ -368,6 +368,7 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
           ],
         ),
       ),
+      ),  // GestureDetector
       ],
     );
   }

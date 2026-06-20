@@ -148,17 +148,16 @@ class LeadsService {
   /// Fetch all leads with overdue or today's follow-ups — for queue screen.
   Future<List<Lead>> fetchQueueLeads(String? assignedToId) async {
     final todayEnd = DateTime.now().add(const Duration(days: 1));
-    var query = supabase
+    var q = supabase
         .from('leads')
         .select('*, call_logs(*), lead_notes(*)')
         .not('followup_at', 'is', null)
         .lte('followup_at', todayEnd.toUtc().toIso8601String())
-        .not('stage', 'in', '("lost","finalAgreement","future")')
-        .order('followup_at', ascending: true);
+        .not('stage', 'in', '("lost","finalAgreement","future")');
     if (assignedToId != null) {
-      query = query.eq('assigned_to', assignedToId);
+      q = q.eq('assigned_to', assignedToId);
     }
-    final data = await query;
+    final data = await q.order('followup_at', ascending: true);
     return (data as List).map((m) => leadFromMap(m as Map<String, dynamic>)).toList();
   }
 
