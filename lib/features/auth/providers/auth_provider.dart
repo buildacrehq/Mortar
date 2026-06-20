@@ -50,7 +50,8 @@ class AuthNotifier extends StateNotifier<AppUser?> {
         }
       });
     } catch (_) {
-      // Silently ignore init errors (e.g. passkeys web SDK on Chrome)
+      // Init failed — mark loading done so app doesn't get stuck on splash
+      if (mounted) _ref.read(authLoadingProvider.notifier).state = false;
     }
   }
 
