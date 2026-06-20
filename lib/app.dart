@@ -10,6 +10,8 @@ class BuildacreCrmApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch authProvider to trigger AuthNotifier initialization
+    ref.watch(authProvider);
     final isAuthLoading = ref.watch(authLoadingProvider);
 
     // Show navy splash while restoring session — prevents login screen flash
