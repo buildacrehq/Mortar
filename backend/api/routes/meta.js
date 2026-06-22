@@ -1,5 +1,6 @@
 const express = require('express');
 const supabase = require('../supabase');
+const { assignNewLead } = require('../services/assignment');
 const router = express.Router();
 
 // ─── Meta Webhook Verification ────────────────────────────────────────────────
@@ -95,8 +96,8 @@ router.post('/lead-webhook', async (req, res) => {
 
         console.log(`[Meta] New lead saved: ${newLead.id} — ${name} (${phone})`);
 
-        // TODO: Trigger assignment algorithm (Phase 2.5)
-        // await assignLead(newLead.id, city, 'construction');
+        // Auto-assign to best available TC based on strategy
+        await assignNewLead(newLead.id, city, 'construction');
 
       } catch (err) {
         console.error('[Meta] Error processing lead:', err.message);

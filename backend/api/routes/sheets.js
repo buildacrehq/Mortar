@@ -1,5 +1,6 @@
 const express = require('express');
 const supabase = require('../supabase');
+const { assignNewLead } = require('../services/assignment');
 const router = express.Router();
 
 // ─── Google Sheets Sync ───────────────────────────────────────────────────────
@@ -74,6 +75,7 @@ router.post('/sync', async (req, res) => {
     }
 
     console.log(`[Sheets] Lead synced: ${newLead.id} — ${name} (${cleanPhone})`);
+    await assignNewLead(newLead.id, city.toLowerCase() === 'mysore' ? 'mysore' : 'bangalore', serviceType.toLowerCase());
   } catch (err) {
     console.error('[Sheets] Error:', err.message);
   }

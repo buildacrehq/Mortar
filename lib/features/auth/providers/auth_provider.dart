@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
+import 'package:buildacre_crm/core/services/fcm_service.dart';
 import 'package:buildacre_crm/main.dart';
 
 /// True while the initial auth check + profile load is in progress.
@@ -72,12 +73,15 @@ class AuthNotifier extends StateNotifier<AppUser?> {
       };
 
       state = AppUser(
-        id: data['id'] as String,
+        id: userId,
         name: data['name'] as String,
         email: data['email'] as String,
         role: role,
         city: data['city'] as String?,
       );
+
+      // Save FCM token for push notifications (silently skips if Firebase not configured)
+      FcmService.initialize(userId);
     } catch (e) {
       state = null;
     } finally {
@@ -101,6 +105,8 @@ class AuthNotifier extends StateNotifier<AppUser?> {
   }
 
   Future<void> logout() async {
+    final userId = state?.id;
+    if (userId != null) await FcmService.clearToken(userId);
     await supabase.auth.signOut();
     state = null;
   }
