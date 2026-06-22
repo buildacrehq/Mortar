@@ -292,16 +292,14 @@ Update this after Vercel deploy. Everything else (Supabase URL, keys) is in `mai
 
 ---
 
-## Login Credentials (Supabase Auth)
+## Login Credentials
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | yogeshhm958@gmail.com | Set via Supabase |
-| Manager | harsha@buildacre.in | Set via Supabase |
-| Telecaller | editor@buildacre.in | Set via Supabase |
+All user accounts are managed in Supabase Auth dashboard.
 
-To reset passwords: Supabase Auth dashboard → Users → Send password reset email
-Or: Settings → Team Availability → tap TC → Send Password Reset Email
+- Roles: `admin`, `manager`, `telecaller`
+- Passwords are set when creating accounts in Supabase Auth
+- To reset a TC password: Settings → Team Availability → tap TC → Send Password Reset Email
+- Managers/Admins can change their own password from Settings → Change Password
 
 ---
 
