@@ -713,13 +713,13 @@ class _CallBar extends ConsumerWidget {
   }
 
   void _initiateCall(BuildContext context, WidgetRef ref) {
-    // When Exotel is connected:
-    // 1. Call backend /exotel/click-to-call with lead.id + lead.phone
-    // 2. Exotel calls TC's phone → TC picks up → connected to customer
-    // 3. After call ends, Exotel webhook auto-saves recording to Supabase
-    // 4. TC opens LogOutcomeSheet to log what happened
+    // When Exotel is connected (Monday):
+    // POST ${AppConstants.backendUrl}/exotel/click-to-call
+    // Body: { leadId: lead.id, tcPhone: currentUser.phone, customerPhone: lead.phone }
+    // Exotel calls TC first → TC picks up → connected to customer
+    // After call ends → Exotel webhook saves recording to Supabase automatically
     //
-    // For now (pre-Exotel): show LogOutcomeSheet to manually log the call
+    // For now (pre-Exotel): TC logs call manually
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

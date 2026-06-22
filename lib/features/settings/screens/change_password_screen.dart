@@ -210,8 +210,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Enter a new password';
                 if (v.length < 8) return 'At least 8 characters required';
-                if (v == _currentController.text)
+                if (v == _currentController.text) {
                   return 'New password must be different';
+                }
                 return null;
               },
             ),
