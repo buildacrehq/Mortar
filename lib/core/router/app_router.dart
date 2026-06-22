@@ -10,6 +10,7 @@ import 'package:buildacre_crm/features/leads/screens/search_screen.dart';
 import 'package:buildacre_crm/features/leads/screens/followup_calendar_screen.dart';
 import 'package:buildacre_crm/features/leads/screens/lead_timeline_screen.dart';
 import 'package:buildacre_crm/features/leads/screens/edit_lead_screen.dart';
+import 'package:buildacre_crm/features/leads/screens/bulk_import_screen.dart';
 import 'package:buildacre_crm/features/leads/screens/lost_leads_screen.dart';
 import 'package:buildacre_crm/features/leads/screens/future_pipeline_screen.dart';
 import 'package:buildacre_crm/features/dashboard/screens/dashboard_screen.dart';
@@ -62,6 +63,10 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'future',
               builder: (context, state) => const FuturePipelineScreen(),
+            ),
+            GoRoute(
+              path: 'bulk-import',
+              builder: (context, state) => const BulkImportScreen(),
             ),
             GoRoute(
               path: ':id',

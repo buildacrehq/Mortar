@@ -713,8 +713,13 @@ class _CallBar extends ConsumerWidget {
   }
 
   void _initiateCall(BuildContext context, WidgetRef ref) {
-    // TODO: trigger Exotel click-to-call API
-    // For now, show the log outcome sheet immediately (simulating call end)
+    // When Exotel is connected:
+    // 1. Call backend /exotel/click-to-call with lead.id + lead.phone
+    // 2. Exotel calls TC's phone → TC picks up → connected to customer
+    // 3. After call ends, Exotel webhook auto-saves recording to Supabase
+    // 4. TC opens LogOutcomeSheet to log what happened
+    //
+    // For now (pre-Exotel): show LogOutcomeSheet to manually log the call
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

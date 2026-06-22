@@ -120,6 +120,12 @@ class _LeadsListScreenState extends ConsumerState<LeadsListScreen> {
               tooltip: 'Future pipeline',
               onPressed: () => context.push('/leads/future'),
             ),
+          if (isManager)
+            IconButton(
+              icon: const Icon(Icons.upload_outlined),
+              tooltip: 'Bulk import from Sheets',
+              onPressed: () => context.push('/leads/bulk-import'),
+            ),
           IconButton(
             icon: const Icon(Icons.view_kanban_outlined),
             tooltip: 'Pipeline view',
