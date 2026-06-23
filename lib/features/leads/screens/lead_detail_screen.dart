@@ -716,13 +716,19 @@ class _CallBar extends ConsumerWidget {
   void _initiateCall(BuildContext context, WidgetRef ref) async {
     final user = ref.read(authProvider);
     final members = ref.read(profilesProvider);
-    final currentMember = members.firstWhere(
-      (m) => m.id == user?.id,
-      orElse: () => TeamMember(
-          id: '', name: '', email: '', role: UserRole.telecaller),
+
+    // Check the ASSIGNED TC's calling type (not manager's type)
+    // If manager/admin taps Call, use the assigned TC's setting
+    final assignedTcId = lead.assignedTo.isNotEmpty ? lead.assignedTo : user?.id ?? '';
+    final relevantMember = members.firstWhere(
+      (m) => m.id == assignedTcId,
+      orElse: () => members.firstWhere(
+        (m) => m.id == user?.id,
+        orElse: () => TeamMember(id: '', name: '', email: '', role: UserRole.telecaller),
+      ),
     );
 
-    if (currentMember.callingType == CallingType.personal) {
+    if (relevantMember.callingType == CallingType.personal) {
       // Personal/company number — open phone dialer directly
       final phone = lead.phone.replaceAll(RegExp(r'\D'), '');
       final dialerUrl = Uri.parse('tel:$phone');
