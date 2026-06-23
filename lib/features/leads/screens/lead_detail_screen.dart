@@ -13,6 +13,7 @@ import 'package:buildacre_crm/features/calls/screens/log_outcome_sheet.dart';
 import 'package:buildacre_crm/features/leads/widgets/whatsapp_sheet.dart';
 import 'package:buildacre_crm/features/leads/widgets/add_note_sheet.dart';
 import 'package:buildacre_crm/features/leads/widgets/mark_as_lost_sheet.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 
@@ -712,19 +713,41 @@ class _CallBar extends ConsumerWidget {
     );
   }
 
-  void _initiateCall(BuildContext context, WidgetRef ref) {
-    // When Exotel is connected (Monday):
-    // POST ${AppConstants.backendUrl}/exotel/click-to-call
-    // Body: { leadId: lead.id, tcPhone: currentUser.phone, customerPhone: lead.phone }
-    // Exotel calls TC first → TC picks up → connected to customer
-    // After call ends → Exotel webhook saves recording to Supabase automatically
-    //
-    // For now (pre-Exotel): TC logs call manually
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => LogOutcomeSheet(leadId: lead.id),
+  void _initiateCall(BuildContext context, WidgetRef ref) async {
+    final user = ref.read(authProvider);
+    final members = ref.read(profilesProvider);
+    final currentMember = members.firstWhere(
+      (m) => m.id == user?.id,
+      orElse: () => TeamMember(
+          id: '', name: '', email: '', role: UserRole.telecaller),
     );
+
+    if (currentMember.callingType == CallingType.personal) {
+      // Personal/company number — open phone dialer directly
+      final phone = lead.phone.replaceAll(RegExp(r'\D'), '');
+      final dialerUrl = Uri.parse('tel:$phone');
+      if (await canLaunchUrl(dialerUrl)) {
+        await launchUrl(dialerUrl);
+      }
+      // After dialing, show log outcome sheet so TC can record what happened
+      if (context.mounted) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => LogOutcomeSheet(leadId: lead.id),
+        );
+      }
+    } else {
+      // Exotel — click-to-call via backend (Monday)
+      // POST ${AppConstants.backendUrl}/exotel/click-to-call
+      // For now: log manually
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => LogOutcomeSheet(leadId: lead.id),
+      );
+    }
   }
 
   void _showStageSelector(BuildContext context, WidgetRef ref) {
