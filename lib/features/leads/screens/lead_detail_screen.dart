@@ -731,11 +731,10 @@ class _CallBar extends ConsumerWidget {
     if (relevantMember.callingType == CallingType.personal) {
       // Personal/company number — open phone dialer directly
       String phone = lead.phone.replaceAll(RegExp(r'\D'), '');
-      // Strip country code if present — keep last 10 digits for Indian numbers
       if (phone.length > 10) phone = phone.substring(phone.length - 10);
       try {
         await launchUrl(
-          Uri.parse('tel:$phone'),
+          Uri.parse('tel:+91$phone'),
           mode: LaunchMode.externalApplication,
         );
       } catch (_) {}
