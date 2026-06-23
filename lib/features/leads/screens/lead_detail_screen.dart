@@ -731,13 +731,15 @@ class _CallBar extends ConsumerWidget {
     if (relevantMember.callingType == CallingType.personal) {
       // Personal/company number — open phone dialer directly
       final phone = lead.phone.replaceAll(RegExp(r'\D'), '');
-      final dialerUrl = Uri.parse('tel:$phone');
-      if (await canLaunchUrl(dialerUrl)) {
-        await launchUrl(dialerUrl);
-      }
+      try {
+        await launchUrl(
+          Uri.parse('tel:$phone'),
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (_) {}
       // After dialing, show log outcome sheet so TC can record what happened
       if (context.mounted) {
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 800));
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
