@@ -523,6 +523,9 @@ class _TcAvailabilityTile extends ConsumerWidget {
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
+                // Calling type toggle (admin only)
+                _CallingTypeToggle(tc: tc),
+                const SizedBox(height: 6),
                 // Service type chips
                 Wrap(
                   spacing: 6,
@@ -752,6 +755,92 @@ class _AbsentOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CallingTypeToggle extends ConsumerWidget {
+  final TeamMember tc;
+  const _CallingTypeToggle({required this.tc});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isExotel = tc.callingType == CallingType.exotel;
+
+    return Row(
+      children: [
+        // Exotel chip
+        GestureDetector(
+          onTap: () => ref.read(profilesProvider.notifier)
+              .updateCallingType(tc.id, CallingType.exotel),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isExotel
+                  ? AppColors.stageWon.withValues(alpha: 0.12)
+                  : AppColors.surface,
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(6)),
+              border: Border.all(
+                color: isExotel ? AppColors.stageWon : AppColors.divider,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.headset_mic_outlined,
+                    size: 12,
+                    color: isExotel ? AppColors.stageWon : AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Text('Exotel',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: isExotel ? AppColors.stageWon : AppColors.textSecondary,
+                        fontWeight: isExotel ? FontWeight.w600 : FontWeight.w400)),
+              ],
+            ),
+          ),
+        ),
+        // Personal chip
+        GestureDetector(
+          onTap: () => ref.read(profilesProvider.notifier)
+              .updateCallingType(tc.id, CallingType.personal),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: !isExotel
+                  ? Colors.orangeAccent.withValues(alpha: 0.12)
+                  : AppColors.surface,
+              borderRadius: const BorderRadius.horizontal(right: Radius.circular(6)),
+              border: Border.all(
+                color: !isExotel ? Colors.orangeAccent : AppColors.divider,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.phone_outlined,
+                    size: 12,
+                    color: !isExotel ? Colors.orangeAccent : AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Text('Personal',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: !isExotel ? Colors.orangeAccent : AppColors.textSecondary,
+                        fontWeight: !isExotel ? FontWeight.w600 : FontWeight.w400)),
+              ],
+            ),
+          ),
+        ),
+        if (!isExotel) ...[
+          const SizedBox(width: 6),
+          const Icon(Icons.info_outline, size: 12, color: Colors.orangeAccent),
+          const SizedBox(width: 3),
+          const Text('No auto recording',
+              style: TextStyle(fontSize: 10, color: Colors.orangeAccent)),
+        ],
+      ],
     );
   }
 }

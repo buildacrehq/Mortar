@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/main.dart';
 
+enum CallingType { exotel, personal }
+
 class TeamMember {
   final String id;
   final String name;
@@ -12,6 +14,7 @@ class TeamMember {
   final String? phone;
   final bool isActive;
   final List<ServiceType> serviceTypes;
+  final CallingType callingType;
 
   const TeamMember({
     required this.id,
@@ -22,6 +25,7 @@ class TeamMember {
     this.phone,
     this.isActive = true,
     this.serviceTypes = const [],
+    this.callingType = CallingType.exotel,
   });
 
   String get initials {
@@ -59,6 +63,9 @@ TeamMember _fromMap(Map<String, dynamic> m) {
     phone: m['phone'] as String?,
     isActive: m['is_active'] as bool? ?? true,
     serviceTypes: serviceTypes,
+    callingType: (m['calling_type'] as String?) == 'personal'
+        ? CallingType.personal
+        : CallingType.exotel,
   );
 }
 
@@ -95,6 +102,14 @@ class ProfilesNotifier extends StateNotifier<List<TeamMember>> {
   }
 
   Future<void> refresh() => _load();
+
+  Future<void> updateCallingType(String id, CallingType type) async {
+    try {
+      await supabase.from('profiles')
+          .update({'calling_type': type.name}).eq('id', id);
+      await _load();
+    } catch (_) {}
+  }
 
   Future<void> updateServiceTypes(String id, List<ServiceType> types) async {
     try {
