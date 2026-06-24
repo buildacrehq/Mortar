@@ -739,8 +739,8 @@ class _CallBar extends ConsumerWidget {
         );
       } catch (_) {}
       // After dialing, show log outcome sheet so TC can record what happened
+      await Future.delayed(const Duration(milliseconds: 800));
       if (context.mounted) {
-        await Future.delayed(const Duration(milliseconds: 800));
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
