@@ -407,7 +407,8 @@ class _PlayButtonState extends State<_PlayButton> {
 
   // Extract callSid from Exotel recording URL
   String? _getCallSid(String url) {
-    final match = RegExp(r'/([a-f0-9]+)\.mp3$').firstMatch(url);
+    // Exotel CallSids are alphanumeric (e.g. 5a23c3cd7848acbd36b6064b75851a6p)
+    final match = RegExp(r'/([a-z0-9]+)\.mp3$').firstMatch(url);
     return match?.group(1);
   }
 
