@@ -18,14 +18,13 @@ router.post('/click-to-call', async (req, res) => {
 
   try {
     const params = new URLSearchParams({
-      From: tcPhone,           // TC's personal mobile (Exotel calls this first)
-      To: customerPhone,       // Customer's number (Exotel bridges to this)
+      From: tcPhone,
+      To: customerPhone,
       CallerId: callerId || process.env.EXOTEL_PHONE_BLR,
-      Record: 'true',          // Auto-record every call
+      Record: 'true',
       StatusCallback: `${process.env.BACKEND_URL}/exotel/call-webhook`,
-      StatusCallbackEvents: 'terminal',
-      CustomField: leadId,     // Pass leadId so webhook can match the call to the lead
-      TimeLimit: 3600,         // Max 1 hour call
+      CustomField: leadId,
+      TimeLimit: 3600,
     });
 
     const url = `${EXOTEL_BASE}/Calls/connect.json`;
