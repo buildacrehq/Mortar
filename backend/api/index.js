@@ -41,12 +41,12 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Mortar Backend running on port ${PORT}`);
-  console.log(`Exotel: ${process.env.EXOTEL_API_KEY ? '✅' : '⏳ pending credentials'}`);
-  console.log(`Meta:   ${process.env.META_APP_SECRET ? '✅' : '⏳ pending credentials'}`);
-  console.log(`Supabase: ${process.env.SUPABASE_URL ? '✅' : '❌ missing'}`);
-});
+// Local dev only — Vercel handles port automatically
+if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Mortar Backend running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
