@@ -4,9 +4,11 @@ class AppConstants {
   static const shortCallThresholdSeconds = 30;
   static const quotationFollowupDays = 3;
 
-  // Backend URL — update after Vercel deploy on Monday
-  // Used for Exotel click-to-call API calls from Flutter
-  static const backendUrl = 'https://your-vercel-url.vercel.app';
+  // Mortar backend on Vercel
+  static const backendUrl = 'https://mortar-seven.vercel.app';
+
+  // Exotel trial ExoPhone
+  static const exotelPhone = '08047285622';
 }
 
 enum UserRole { telecaller, manager, admin }
