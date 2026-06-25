@@ -3,7 +3,8 @@ const axios = require('axios');
 const supabase = require('../supabase');
 const router = express.Router();
 
-const EXOTEL_BASE = `https://${process.env.EXOTEL_API_KEY}:${process.env.EXOTEL_API_TOKEN}@api.in.exotel.com/v1/Accounts/${process.env.EXOTEL_SID}`;
+// buildacre1 account is on Singapore region — uses api.exotel.com (not api.in.exotel.com)
+const EXOTEL_BASE = `https://${process.env.EXOTEL_API_KEY}:${process.env.EXOTEL_API_TOKEN}@${process.env.EXOTEL_SUBDOMAIN}/v1/Accounts/${process.env.EXOTEL_SID}`;
 
 // ─── Click-to-Call ────────────────────────────────────────────────────────────
 // Called by Flutter when TC taps "Call" on a lead
