@@ -120,8 +120,17 @@ router.post('/call-webhook', async (req, res) => {
 });
 
 // ─── Inbound Call Webhook ─────────────────────────────────────────────────────
-// Exotel sends GET to verify URL, then POSTs call data when call ends
-router.get('/inbound-webhook', (req, res) => res.status(200).send('OK'));
+// Exotel sends GET to verify URL — also handle if data comes as GET params
+router.get('/inbound-webhook', async (req, res) => {
+  res.status(200).send('OK');
+  // Check if call data came as query params
+  const { CallSid, Status, RecordingUrl, From } = req.query;
+  if (CallSid && From) {
+    console.log('[Exotel Inbound GET] Received call data:', { CallSid, Status, From, RecordingUrl });
+    // Process same as POST
+    req.body = req.query;
+  }
+});
 
 router.post('/inbound-webhook', async (req, res) => {
   const {
