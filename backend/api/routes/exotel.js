@@ -50,8 +50,8 @@ router.post('/click-to-call', async (req, res) => {
 });
 
 // ─── Call Webhook ─────────────────────────────────────────────────────────────
-// Exotel POSTs here when a call ends (terminal event)
-// Saves call log + recording URL to Supabase
+router.get('/call-webhook', (req, res) => res.status(200).send('OK'));
+
 router.post('/call-webhook', async (req, res) => {
   // Exotel sends form-encoded data
   const {
@@ -120,8 +120,9 @@ router.post('/call-webhook', async (req, res) => {
 });
 
 // ─── Inbound Call Webhook ─────────────────────────────────────────────────────
-// Exotel POSTs here when an inbound call ends
-// Auto-creates lead if phone number not found in Supabase
+// Exotel sends GET to verify URL, then POSTs call data when call ends
+router.get('/inbound-webhook', (req, res) => res.status(200).send('OK'));
+
 router.post('/inbound-webhook', async (req, res) => {
   const {
     CallSid,
