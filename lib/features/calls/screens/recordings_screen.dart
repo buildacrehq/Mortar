@@ -19,29 +19,36 @@ class _CallRecord {
   const _CallRecord({required this.log, required this.lead, required this.telecaller});
 }
 
-final _recordingsProvider = Provider<List<_CallRecord>>((ref) {
-  // Use dedicated provider — fetches ALL leads that have call logs from Supabase
+// Groups all call logs per lead — one card per lead, calls sorted newest first
+class _LeadRecords {
+  final Lead lead;
+  final TeamMember? telecaller;
+  final List<CallLog> logs; // sorted newest first
+
+  const _LeadRecords({required this.lead, required this.telecaller, required this.logs});
+
+  CallLog get latestLog => logs.first;
+  bool get hasSuspicious => logs.any((l) => l.isSuspiciouslyShort);
+}
+
+final _recordingsProvider = Provider<List<_LeadRecords>>((ref) {
   final leads = ref.watch(recordingsLeadsProvider);
   final tcMap = {for (final tc in ref.watch(profilesProvider)) tc.id: tc};
 
-  final records = <_CallRecord>[];
+  final grouped = <_LeadRecords>[];
   for (final lead in leads) {
-    final tc = tcMap[lead.assignedTo];
-    for (final log in lead.callLogs) {
-      records.add(_CallRecord(
-        log: log,
-        lead: lead,
-        telecaller: tc ?? TeamMember(
-          id: lead.assignedTo,
-          name: 'Unknown',
-          email: '',
-          role: UserRole.telecaller,
-        ),
-      ));
-    }
+    if (lead.callLogs.isEmpty) continue;
+    final sortedLogs = [...lead.callLogs]
+      ..sort((a, b) => b.calledAt.compareTo(a.calledAt)); // newest first
+    grouped.add(_LeadRecords(
+      lead: lead,
+      telecaller: tcMap[lead.assignedTo],
+      logs: sortedLogs,
+    ));
   }
-  records.sort((a, b) => b.log.calledAt.compareTo(a.log.calledAt));
-  return records;
+  // Sort groups by most recent call
+  grouped.sort((a, b) => b.latestLog.calledAt.compareTo(a.latestLog.calledAt));
+  return grouped;
 });
 
 class RecordingsScreen extends ConsumerStatefulWidget {
@@ -59,13 +66,14 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
   Widget build(BuildContext context) {
     final all = ref.watch(_recordingsProvider);
 
-    var filtered = all.where((r) {
-      if (_selectedTcId != null && r.telecaller.id != _selectedTcId) return false;
-      if (_suspiciousOnly && !r.log.isSuspiciouslyShort) return false;
+    final filtered = all.where((r) {
+      if (_selectedTcId != null && r.telecaller?.id != _selectedTcId) return false;
+      if (_suspiciousOnly && !r.hasSuspicious) return false;
       return true;
     }).toList();
 
-    final suspiciousCount = all.where((r) => r.log.isSuspiciouslyShort).length;
+    final totalCalls = all.fold(0, (sum, r) => sum + r.logs.length);
+    final suspiciousCount = all.where((r) => r.hasSuspicious).length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Call Recordings')),
@@ -74,7 +82,7 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
         onRefresh: () => ref.read(recordingsLeadsProvider.notifier).refresh(),
         child: Column(
           children: [
-            _buildHeader(context, all.length, suspiciousCount),
+            _buildHeader(context, totalCalls, suspiciousCount),
             _buildFilters(context),
             Expanded(
               child: filtered.isEmpty
@@ -83,7 +91,7 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
                       padding: const EdgeInsets.all(16),
                       itemCount: filtered.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (_, i) => _CallCard(record: filtered[i]),
+                      itemBuilder: (_, i) => _LeadCallCard(record: filtered[i]),
                     ),
             ),
           ],
@@ -319,6 +327,121 @@ class _CallCard extends StatelessWidget {
   }
 }
 
+// One card per lead — shows all calls grouped, newest first
+class _LeadCallCard extends StatelessWidget {
+  final _LeadRecords record;
+  const _LeadCallCard({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    final lead = record.lead;
+    final tc = record.telecaller;
+    final logs = record.logs; // already sorted newest first
+
+    return GestureDetector(
+      onTap: () => context.push('/leads/${lead.id}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: record.hasSuspicious ? Colors.red.shade200 : AppColors.divider,
+            width: record.hasSuspicious ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Lead header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(lead.name,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                        Text('${lead.serviceType.label} · ${lead.city.label}'
+                            '${lead.phone.isNotEmpty ? ' · ${lead.phone}' : ''}',
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.navy.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text('${logs.length} call${logs.length > 1 ? 's' : ''}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.navy, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Each call log — newest first
+            ...logs.indexed.map((entry) {
+              final i = entry.$1;
+              final log = entry.$2;
+              final isSuspicious = log.isSuspiciouslyShort;
+              return Column(
+                children: [
+                  if (i > 0) const Divider(height: 1, indent: 14),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _OutcomeIcon(outcome: log.outcome),
+                            const SizedBox(width: 8),
+                            _MetaPill(
+                              icon: Icons.timer_outlined,
+                              label: log.formattedDuration,
+                              color: isSuspicious ? Colors.red : null,
+                            ),
+                            const SizedBox(width: 8),
+                            _MetaPill(icon: Icons.calendar_today_outlined,
+                                label: _formatDate(log.calledAt)),
+                            if (tc != null) ...[
+                              const SizedBox(width: 8),
+                              _MetaPill(icon: Icons.person_outline, label: tc.firstName),
+                            ],
+                            const Spacer(),
+                            _OutcomePill(outcome: log.outcome),
+                          ],
+                        ),
+                        if (log.recordingUrl != null) ...[
+                          const SizedBox(height: 8),
+                          _PlayButton(url: log.recordingUrl!),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final d = DateTime(dt.year, dt.month, dt.day);
+    if (d == today) return 'Today';
+    if (d == yesterday) return 'Yesterday';
+    return '${dt.day}/${dt.month}';
+  }
+}
+
 class _OutcomeIcon extends StatelessWidget {
   final CallOutcome outcome;
   const _OutcomeIcon({required this.outcome});
@@ -510,26 +633,40 @@ class _PlayButtonState extends State<_PlayButton> {
                   _loading ? 'Loading...' : isPlaying ? 'Pause' : isPaused ? 'Resume' : 'Play Recording',
                   style: const TextStyle(fontSize: 12, color: AppColors.navy, fontWeight: FontWeight.w500),
                 ),
-                if ((isPlaying || isPaused) && _duration > Duration.zero) ...[
-                  const SizedBox(width: 6),
-                  Text('${_fmt(_position)} / ${_fmt(_duration)}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                ],
               ],
             ),
             if ((isPlaying || isPaused) && _duration > Duration.zero) ...[
               const SizedBox(height: 4),
-              SizedBox(
-                width: 160,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: progress.clamp(0.0, 1.0),
-                    minHeight: 3,
-                    backgroundColor: AppColors.divider,
-                    color: AppColors.navy,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_fmt(_position),
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                  SizedBox(
+                    width: 140,
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 3,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                        activeTrackColor: AppColors.navy,
+                        inactiveTrackColor: AppColors.divider,
+                        thumbColor: AppColors.navy,
+                      ),
+                      child: Slider(
+                        value: _position.inMilliseconds.toDouble().clamp(
+                            0, _duration.inMilliseconds.toDouble()),
+                        min: 0,
+                        max: _duration.inMilliseconds.toDouble(),
+                        onChanged: (val) async {
+                          await _player.seek(Duration(milliseconds: val.toInt()));
+                        },
+                      ),
+                    ),
                   ),
-                ),
+                  Text(_fmt(_duration),
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                ],
               ),
             ],
           ],
