@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
@@ -403,54 +403,135 @@ class _PlayButton extends StatefulWidget {
 }
 
 class _PlayButtonState extends State<_PlayButton> {
+  final _player = AudioPlayer();
+  PlayerState _state = PlayerState.stopped;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
   bool _loading = false;
 
-  // Extract callSid from Exotel recording URL
+  @override
+  void initState() {
+    super.initState();
+    _player.onPlayerStateChanged.listen((s) {
+      if (mounted) setState(() => _state = s);
+    });
+    _player.onPositionChanged.listen((p) {
+      if (mounted) setState(() => _position = p);
+    });
+    _player.onDurationChanged.listen((d) {
+      if (mounted) setState(() => _duration = d);
+    });
+    _player.onPlayerComplete.listen((_) {
+      if (mounted) setState(() {
+        _state = PlayerState.stopped;
+        _position = Duration.zero;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
   String? _getCallSid(String url) {
-    // Exotel CallSids are alphanumeric (e.g. 5a23c3cd7848acbd36b6064b75851a6p)
     final match = RegExp(r'/([a-z0-9]+)\.mp3$').firstMatch(url);
     return match?.group(1);
   }
 
-  Future<void> _openRecording() async {
+  Future<void> _togglePlay() async {
+    if (_state == PlayerState.playing) {
+      await _player.pause();
+      return;
+    }
+
+    if (_state == PlayerState.paused) {
+      await _player.resume();
+      return;
+    }
+
     setState(() => _loading = true);
     try {
       final callSid = _getCallSid(widget.url);
-      if (callSid == null) throw Exception('Invalid URL');
-
-      // Use backend proxy to serve recording with Exotel credentials
-      final proxyUrl = '${AppConstants.backendUrl}/exotel/recording/$callSid';
-      await launchUrl(Uri.parse(proxyUrl), mode: LaunchMode.externalApplication);
-    } catch (_) {
-      // Fallback: try direct URL
-      await launchUrl(Uri.parse(widget.url), mode: LaunchMode.externalApplication);
+      final proxyUrl = callSid != null
+          ? '${AppConstants.backendUrl}/exotel/recording/$callSid'
+          : widget.url;
+      await _player.play(UrlSource(proxyUrl));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not play: $e'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  String _fmt(Duration d) =>
+      '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
+
   @override
   Widget build(BuildContext context) {
+    final isPlaying = _state == PlayerState.playing;
+    final isPaused = _state == PlayerState.paused;
+    final progress = _duration.inMilliseconds > 0
+        ? _position.inMilliseconds / _duration.inMilliseconds
+        : 0.0;
+
     return GestureDetector(
-      onTap: _loading ? null : _openRecording,
+      onTap: _loading ? null : _togglePlay,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.navy.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _loading
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.navy))
-                : const Icon(Icons.play_circle_outline, size: 18, color: AppColors.navy),
-            const SizedBox(width: 6),
-            Text(
-              _loading ? 'Opening...' : 'Play Recording',
-              style: const TextStyle(fontSize: 12, color: AppColors.navy, fontWeight: FontWeight.w500),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_loading)
+                  const SizedBox(width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.navy))
+                else
+                  Icon(
+                    isPlaying ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                    size: 18, color: AppColors.navy,
+                  ),
+                const SizedBox(width: 6),
+                Text(
+                  _loading ? 'Loading...' : isPlaying ? 'Pause' : isPaused ? 'Resume' : 'Play Recording',
+                  style: const TextStyle(fontSize: 12, color: AppColors.navy, fontWeight: FontWeight.w500),
+                ),
+                if ((isPlaying || isPaused) && _duration > Duration.zero) ...[
+                  const SizedBox(width: 6),
+                  Text('${_fmt(_position)} / ${_fmt(_duration)}',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                ],
+              ],
             ),
+            if ((isPlaying || isPaused) && _duration > Duration.zero) ...[
+              const SizedBox(height: 4),
+              SizedBox(
+                width: 160,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    minHeight: 3,
+                    backgroundColor: AppColors.divider,
+                    color: AppColors.navy,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -19,6 +19,7 @@ dependencies:
   supabase_flutter: ^2.15.0
   shared_preferences: ^2.3.3
   http: ^1.2.2
+  audioplayers: ^6.1.0
   # firebase_core and firebase_messaging — add back when google-services.json is ready
 
 dev_dependencies:
