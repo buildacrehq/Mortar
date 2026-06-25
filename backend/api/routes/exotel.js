@@ -263,11 +263,12 @@ router.post('/inbound-webhook', async (req, res) => {
 });
 
 // ─── Recording Proxy ──────────────────────────────────────────────────────────
-// Streams Exotel recording with authentication
-// Flutter calls: GET /exotel/recording/{callSid}
 router.get('/recording/:callSid', async (req, res) => {
   const { callSid } = req.params;
   const recordingUrl = `https://recordings.exotel.com/exotelrecordings/${process.env.EXOTEL_SID}/${callSid}.mp3`;
+
+  console.log('[Recording Proxy] Fetching:', recordingUrl);
+  console.log('[Recording Proxy] Auth key starts with:', process.env.EXOTEL_API_KEY?.slice(0, 8));
 
   try {
     const response = await axios.get(recordingUrl, {
@@ -275,15 +276,24 @@ router.get('/recording/:callSid', async (req, res) => {
         username: process.env.EXOTEL_API_KEY,
         password: process.env.EXOTEL_API_TOKEN,
       },
-      responseType: 'stream',
+      responseType: 'arraybuffer', // Download full file, not stream
+      maxRedirects: 5,
     });
 
+    console.log('[Recording Proxy] ✅ Got recording, size:', response.data.byteLength);
+
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Accept-Ranges', 'bytes');
-    response.data.pipe(res);
+    res.setHeader('Content-Disposition', `inline; filename="${callSid}.mp3"`);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.send(Buffer.from(response.data));
   } catch (err) {
-    console.error('[Recording Proxy] Error:', err.message);
-    res.status(404).json({ error: 'Recording not found or not ready yet' });
+    const status = err.response?.status;
+    console.error('[Recording Proxy] ❌ Error:', status, err.message);
+    return res.status(status || 500).json({
+      error: 'Recording fetch failed',
+      status,
+      message: err.message,
+    });
   }
 });
 
