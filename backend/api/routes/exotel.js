@@ -28,19 +28,25 @@ router.post('/click-to-call', async (req, res) => {
       TimeLimit: 3600,         // Max 1 hour call
     });
 
-    const response = await axios.post(
-      `${EXOTEL_BASE}/Calls/connect`,
-      params.toString(),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-    );
+    const url = `${EXOTEL_BASE}/Calls/connect.json`;
+    console.log('[Exotel] Calling URL:', url);
+    console.log('[Exotel] Params:', { From: tcPhone, To: customerPhone, CallerId: callerId || process.env.EXOTEL_PHONE_BLR });
+
+    const response = await axios.post(url, params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
 
     const callSid = response.data?.Call?.Sid;
-    console.log(`[Exotel] Call initiated: ${callSid} for lead ${leadId}`);
+    console.log(`[Exotel] ✅ Call initiated: ${callSid} for lead ${leadId}`);
 
     return res.json({ success: true, callSid });
   } catch (err) {
-    console.error('[Exotel] Click-to-call failed:', err.response?.data || err.message);
-    return res.status(500).json({ error: 'Failed to initiate call', detail: err.message });
+    const exotelError = err.response?.data;
+    console.error('[Exotel] ❌ Error:', JSON.stringify(exotelError || err.message));
+    return res.status(400).json({
+      error: 'Exotel call failed',
+      detail: exotelError || err.message
+    });
   }
 });
 
