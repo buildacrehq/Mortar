@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
 import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/leads/models/lead.dart';
@@ -402,19 +403,35 @@ class _PlayButton extends StatefulWidget {
 }
 
 class _PlayButtonState extends State<_PlayButton> {
-  bool _playing = false;
+  bool _loading = false;
+
+  // Extract callSid from Exotel recording URL
+  String? _getCallSid(String url) {
+    final match = RegExp(r'/([a-f0-9]+)\.mp3$').firstMatch(url);
+    return match?.group(1);
+  }
+
+  Future<void> _openRecording() async {
+    setState(() => _loading = true);
+    try {
+      final callSid = _getCallSid(widget.url);
+      if (callSid == null) throw Exception('Invalid URL');
+
+      // Use backend proxy to serve recording with Exotel credentials
+      final proxyUrl = '${AppConstants.backendUrl}/exotel/recording/$callSid';
+      await launchUrl(Uri.parse(proxyUrl), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      // Fallback: try direct URL
+      await launchUrl(Uri.parse(widget.url), mode: LaunchMode.externalApplication);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        setState(() => _playing = !_playing);
-        if (_playing) {
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) setState(() => _playing = false);
-          });
-        }
-      },
+      onTap: _loading ? null : _openRecording,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -424,14 +441,13 @@ class _PlayButtonState extends State<_PlayButton> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _playing ? Icons.pause_circle_outline : Icons.play_circle_outline,
-              size: 18,
-              color: AppColors.navy,
-            ),
+            _loading
+                ? const SizedBox(width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.navy))
+                : const Icon(Icons.play_circle_outline, size: 18, color: AppColors.navy),
             const SizedBox(width: 6),
             Text(
-              _playing ? 'Playing...' : 'Play Recording',
+              _loading ? 'Opening...' : 'Play Recording',
               style: const TextStyle(fontSize: 12, color: AppColors.navy, fontWeight: FontWeight.w500),
             ),
           ],
