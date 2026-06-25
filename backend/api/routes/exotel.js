@@ -124,22 +124,20 @@ router.post('/call-webhook', async (req, res) => {
 
 // ─── Inbound Call Webhook ─────────────────────────────────────────────────────
 // Exotel sends inbound call data as GET query params
+// IMPORTANT: Do ALL Supabase work BEFORE res.send() — Vercel terminates after response
 router.get('/inbound-webhook', async (req, res) => {
-  console.log('[Exotel Inbound GET] Query params:', JSON.stringify(req.query));
-  res.status(200).send('OK'); // Respond immediately
+  console.log('[Exotel Inbound] Received:', JSON.stringify(req.query));
 
   const {
-    CallSid,
-    CallFrom,
-    DialCallDuration,
-    RecordingUrl,
-    DialCallStatus,
-    CallTo: exoPhone,
+    CallSid, CallFrom, DialCallDuration,
+    RecordingUrl, DialCallStatus, CallTo: exoPhone,
   } = req.query;
 
-  if (!CallFrom || !CallSid) return;
+  // Only process terminal call events (not dial/ring events)
+  if (!CallFrom || !CallSid || !DialCallStatus) {
+    return res.status(200).send('OK');
+  }
 
-  // Clean caller phone — strip leading 0 or country code, keep 10 digits
   let cleanPhone = CallFrom.replace(/\D/g, '');
   if (cleanPhone.length > 10) cleanPhone = cleanPhone.slice(-10);
 
@@ -148,7 +146,6 @@ router.get('/inbound-webhook', async (req, res) => {
     ? 'callback' : 'notReachable';
 
   try {
-    // Use maybeSingle() — returns null if not found, doesn't throw
     const { data: existingLead } = await supabase
       .from('leads').select('id').eq('phone', cleanPhone).maybeSingle();
 
@@ -162,21 +159,23 @@ router.get('/inbound-webhook', async (req, res) => {
 
     if (existingLead) {
       await supabase.from('call_logs').insert({ lead_id: existingLead.id, ...callLogData });
-      console.log(`[Exotel Inbound] ✅ Call log added to lead ${existingLead.id}`);
+      console.log(`[Exotel Inbound] ✅ Call log added to existing lead ${existingLead.id}`);
     } else {
       const city = exoPhone === process.env.EXOTEL_PHONE_MYS ? 'mysore' : 'bangalore';
-      const { data: newLead, error } = await supabase.from('leads').insert({
+      const { data: newLead, error: insertError } = await supabase.from('leads').insert({
         name: `Inbound Call — ${cleanPhone}`,
         phone: cleanPhone,
         source: 'phone',
         service_type: 'construction',
         city,
         stage: 'telecallerCallDone',
-        assigned_to: null, // Will be assigned by manager in app
+        assigned_to: null,
         created_at: new Date().toISOString(),
       }).select('id').maybeSingle();
 
-      if (!error && newLead) {
+      if (insertError) {
+        console.error('[Exotel Inbound] Lead insert error:', insertError.message);
+      } else if (newLead) {
         await supabase.from('call_logs').insert({ lead_id: newLead.id, ...callLogData });
         console.log(`[Exotel Inbound] ✅ New lead created: ${newLead.id} for ${cleanPhone}`);
       }
@@ -184,6 +183,9 @@ router.get('/inbound-webhook', async (req, res) => {
   } catch (err) {
     console.error('[Exotel Inbound] Error:', err.message);
   }
+
+  // Send response AFTER all Supabase operations complete
+  return res.status(200).send('OK');
 });
 
 router.post('/inbound-webhook', async (req, res) => {
