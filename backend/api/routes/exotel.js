@@ -123,10 +123,65 @@ router.post('/call-webhook', async (req, res) => {
 });
 
 // ─── Inbound Call Webhook ─────────────────────────────────────────────────────
-// Log ALL incoming requests to see exactly what Exotel sends
-router.get('/inbound-webhook', (req, res) => {
+// Exotel sends inbound call data as GET query params
+router.get('/inbound-webhook', async (req, res) => {
   console.log('[Exotel Inbound GET] Query params:', JSON.stringify(req.query));
-  res.status(200).send('OK');
+  res.status(200).send('OK'); // Respond immediately
+
+  const {
+    CallSid,
+    CallFrom,
+    DialCallDuration,
+    RecordingUrl,
+    DialCallStatus,
+    CallTo: exoPhone,
+  } = req.query;
+
+  if (!CallFrom || !CallSid) return;
+
+  // Clean caller phone — strip leading 0 or country code, keep 10 digits
+  let cleanPhone = CallFrom.replace(/\D/g, '');
+  if (cleanPhone.length > 10) cleanPhone = cleanPhone.slice(-10);
+
+  const durationSeconds = parseInt(DialCallDuration || '0', 10);
+  const outcome = DialCallStatus === 'completed' && durationSeconds > 10
+    ? 'callback' : 'notReachable';
+
+  try {
+    const { data: existingLead } = await supabase
+      .from('leads').select('id').eq('phone', cleanPhone).single();
+
+    const callLogData = {
+      duration_seconds: durationSeconds,
+      outcome,
+      recording_url: RecordingUrl || null,
+      exotel_call_sid: CallSid,
+      called_at: new Date().toISOString(),
+    };
+
+    if (existingLead) {
+      await supabase.from('call_logs').insert({ lead_id: existingLead.id, ...callLogData });
+      console.log(`[Exotel Inbound] ✅ Call log added to lead ${existingLead.id}`);
+    } else {
+      const city = exoPhone === process.env.EXOTEL_PHONE_MYS ? 'mysore' : 'bangalore';
+      const { data: newLead, error } = await supabase.from('leads').insert({
+        name: `Inbound Call — ${cleanPhone}`,
+        phone: cleanPhone,
+        source: 'phone',
+        service_type: 'construction',
+        city,
+        stage: 'telecallerCallDone',
+        created_at: new Date().toISOString(),
+      }).select('id').single();
+
+      if (!error && newLead) {
+        await supabase.from('call_logs').insert({ lead_id: newLead.id, ...callLogData });
+        console.log(`[Exotel Inbound] ✅ New lead created: ${newLead.id} for ${cleanPhone}`);
+      }
+    }
+  } catch (err) {
+    console.error('[Exotel Inbound] Error:', err.message);
+  }
 });
 
 router.post('/inbound-webhook', async (req, res) => {
