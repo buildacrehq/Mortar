@@ -148,8 +148,9 @@ router.get('/inbound-webhook', async (req, res) => {
     ? 'callback' : 'notReachable';
 
   try {
+    // Use maybeSingle() — returns null if not found, doesn't throw
     const { data: existingLead } = await supabase
-      .from('leads').select('id').eq('phone', cleanPhone).single();
+      .from('leads').select('id').eq('phone', cleanPhone).maybeSingle();
 
     const callLogData = {
       duration_seconds: durationSeconds,
@@ -171,8 +172,9 @@ router.get('/inbound-webhook', async (req, res) => {
         service_type: 'construction',
         city,
         stage: 'telecallerCallDone',
+        assigned_to: null, // Will be assigned by manager in app
         created_at: new Date().toISOString(),
-      }).select('id').single();
+      }).select('id').maybeSingle();
 
       if (!error && newLead) {
         await supabase.from('call_logs').insert({ lead_id: newLead.id, ...callLogData });
