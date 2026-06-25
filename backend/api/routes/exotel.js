@@ -130,20 +130,27 @@ router.get('/inbound-webhook', (req, res) => {
 });
 
 router.post('/inbound-webhook', async (req, res) => {
+  // Log everything Exotel sends
+  console.log('[Exotel Inbound POST] Body:', JSON.stringify(req.body));
+  console.log('[Exotel Inbound POST] Query:', JSON.stringify(req.query));
+
+  // Merge body and query (Passthru may send either)
+  const data = { ...req.query, ...req.body };
   const {
     CallSid,
     Status,
-    ConversationDuration,
+    Duration: ConversationDuration,
     RecordingUrl,
-    From: callerPhone,   // Customer's number
-    To: exoPhone,        // Which ExoPhone they called (BLR or MYS)
-  } = req.body;
+    From: callerPhone,
+    To: exoPhone,
+  } = data;
 
   res.status(200).send('OK');
 
-  if (!callerPhone) return;
+  if (!callerPhone && !data.from && !data.From) return;
+  const phone = callerPhone || data.from || data.From || '';
 
-  const cleanPhone = callerPhone.replace('+91', '').replace('+', '');
+  const cleanPhone = phone.replace('+91', '').replace('+', '');
 
   try {
     // Check if lead exists
