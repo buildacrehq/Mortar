@@ -27,15 +27,15 @@ class MainShell extends ConsumerWidget {
     return Scaffold(
       body: child,
       floatingActionButton: onLeads
-          ? FloatingActionButton.extended(
+          ? FloatingActionButton(
               onPressed: () => context.push('/leads/add'),
               backgroundColor: AppColors.gold,
               foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text('New Lead',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              mini: false,
+              child: const Icon(Icons.add, size: 28),
             )
           : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         backgroundColor: Colors.white,
