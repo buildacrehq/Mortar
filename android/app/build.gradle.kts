@@ -1,12 +1,16 @@
 plugins {
     id("com.android.application")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Read SDK versions from gradle.properties — permanent, IDE won't override these
+val mortarMinSdk = (project.properties["MORTAR_MIN_SDK"] as String? ?: "21").toInt()
+val mortarCompileSdk = (project.properties["MORTAR_COMPILE_SDK"] as String? ?: "36").toInt()
+val mortarTargetSdk = (project.properties["MORTAR_TARGET_SDK"] as String? ?: "36").toInt()
+
 android {
     namespace = "in.buildacre.buildacre_crm"
-    compileSdk = 36
+    compileSdk = mortarCompileSdk
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -16,8 +20,8 @@ android {
 
     defaultConfig {
         applicationId = "in.buildacre.buildacre_crm"
-        minSdk = flutter.minSdkVersion
-        targetSdk = 36
+        minSdk = mortarMinSdk
+        targetSdk = mortarTargetSdk
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
