@@ -6,6 +6,7 @@ import 'package:buildacre_crm/core/theme/app_theme.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
 import 'package:buildacre_crm/features/settings/providers/team_settings_provider.dart';
+import 'package:buildacre_crm/features/settings/screens/invite_member_screen.dart';
 import 'package:buildacre_crm/main.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -72,8 +73,8 @@ class SettingsScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.phone_outlined,
                 label: 'Exotel',
-                subtitle: 'Virtual number · IVR · Recording',
-                trailing: _StatusDot(connected: false),
+                subtitle: 'Inbound · IVR · Recording',
+                trailing: _StatusDot(connected: true),
                 onTap: () {},
               ),
               _SettingsTile(
@@ -87,7 +88,7 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.storage_outlined,
                 label: 'Supabase',
                 subtitle: 'PostgreSQL database',
-                trailing: _StatusDot(connected: false),
+                trailing: _StatusDot(connected: true),
                 onTap: () {},
               ),
             ]),
@@ -97,7 +98,7 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsTile(
               icon: Icons.info_outline,
               label: 'Version',
-              subtitle: '1.0.0 — Phase 1 MVP',
+              subtitle: '1.0.1 — Phase 1 MVP',
               onTap: null,
             ),
           ]),
@@ -339,14 +340,48 @@ class SettingsScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text('TEAM AVAILABILITY',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.8)),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text('TEAM AVAILABILITY',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.8)),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const InviteMemberScreen()),
+                ),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.navy,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person_add_outlined,
+                          size: 13, color: Colors.white),
+                      SizedBox(width: 5),
+                      Text('Add Member',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         Container(
           decoration: BoxDecoration(

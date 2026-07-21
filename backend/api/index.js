@@ -28,6 +28,7 @@ app.get('/', (req, res) => {
 app.use('/exotel', require('./routes/exotel'));
 app.use('/meta', require('./routes/meta'));
 app.use('/sheets', require('./routes/sheets'));
+app.use('/team', require('./routes/team'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

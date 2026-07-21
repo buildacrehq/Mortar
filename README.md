@@ -211,7 +211,12 @@ POST /meta/lead-webhook         New Meta lead → Supabase + auto-assign
 
 POST /sheets/sync               Google Sheets new row → Supabase + auto-assign
 POST /sheets/reconcile          Bulk sync: check Sheets vs Supabase, fill gaps
+
+POST /team/create-member        Create new TC/manager/admin account (JWT required)
+DELETE /team/remove-member/:id  Soft-deactivate a member (JWT required)
 ```
+
+All `/team/*` routes require `Authorization: Bearer <supabase-jwt>` from an admin or manager.
 
 ---
 
@@ -297,16 +302,16 @@ Update this after Vercel deploy. Everything else (Supabase URL, keys) is in `mai
 All user accounts are managed in Supabase Auth dashboard.
 
 - Roles: `admin`, `manager`, `telecaller`
-- Passwords are set when creating accounts in Supabase Auth
+- **To add a new TC or manager:** Settings → Team Availability → **Add Member** button → set name, email, phone, role, city, initial password → Save. TC can log in immediately.
 - To reset a TC password: Settings → Team Availability → tap TC → Send Password Reset Email
-- Managers/Admins can change their own password from Settings → Change Password
+- TCs can change their own password from Settings → Change Password
 
 ---
 
 ## Phase Status
 
 **Phase 1 — Flutter App: ✅ Complete**
-All 22+ screens, Supabase connected, real-time sync, pagination, analytics
+All 27 screens, Supabase connected, real-time sync, pagination, analytics, in-app TC account creation, in-app call recording player, team management
 
 **Phase 2 — Backend Integrations: 🔜 In Progress**
 - Backend code written, pending Vercel deployment
