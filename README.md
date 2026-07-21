@@ -331,14 +331,42 @@ All 27 screens, Supabase connected, real-time sync, pagination, analytics, in-ap
 
 ---
 
-## APK Distribution
+## APK Download
 
-No Play Store needed. Send `app-release.apk` via WhatsApp.
+**Latest release (direct download):**
+👉 https://github.com/buildacrehq/Mortar/releases/latest
 
-**Build command:**
+Download `Mortar-vX.X.X.apk` → send via WhatsApp to the phone → open on Android → allow "Install unknown apps" if prompted.
+
+No Play Store needed.
+
+---
+
+## Building from Source
+
 ```bash
-flutter build apk --release --no-pub
-# APK: build/app/outputs/flutter-apk/app-release.apk
+git clone https://github.com/buildacrehq/Mortar.git
+cd Mortar
+flutter pub get
+flutter build apk --release
 ```
 
-**Android requirements:** API 21+ (Android 5.0+)
+APK output: `build/app/outputs/flutter-apk/app-release.apk`
+
+**Android requirements:** API 24+ (Android 7.0+)
+
+---
+
+## Publishing a New Release
+
+After building a new APK:
+
+```bash
+gh release create v1.0.X \
+  build/app/outputs/flutter-apk/app-release.apk#Mortar-v1.0.X.apk \
+  --repo buildacrehq/Mortar \
+  --title "Mortar v1.0.X" \
+  --notes "What changed in this build"
+```
+
+The download link stays the same — `github.com/buildacrehq/Mortar/releases/latest` always points to the newest release.
