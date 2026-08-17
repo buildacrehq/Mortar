@@ -896,6 +896,37 @@ class _StageSelectorSheet extends StatelessWidget {
                   }
                 },
               )),
+          const Divider(height: 24),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.block_outlined, size: 16, color: AppColors.textSecondary),
+            ),
+            title: const Text('Mark as Junk',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            subtitle: const Text('Spam, duplicate, or wrong number',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            onTap: () {
+              Navigator.pop(context);
+              ref.read(leadsProvider.notifier).updateStage(
+                    lead.id,
+                    LeadStage.lost,
+                    lostReason: LostReason.invalidLead,
+                  );
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('${lead.name} marked as junk'),
+                backgroundColor: AppColors.textSecondary,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ));
+            },
+          ),
         ],
       ),
     );

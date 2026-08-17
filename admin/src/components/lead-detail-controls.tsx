@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { STAGE_ORDER, STAGE_LABEL } from "@/lib/constants";
-import { updateLeadStage, reassignLead, setMeetingStage } from "@/app/(protected)/leads/actions";
+import {
+  updateLeadStage,
+  reassignLead,
+  setMeetingStage,
+  markAsJunk,
+} from "@/app/(protected)/leads/actions";
 import { ScheduleMeetingModal } from "@/components/schedule-meeting-modal";
 import type { LeadStage, Profile } from "@/lib/types";
 
@@ -88,5 +93,26 @@ export function LeadAssignSelect({
         </option>
       ))}
     </select>
+  );
+}
+
+export function MarkAsJunkButton({ leadId, leadName }: { leadId: string; leadName: string }) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  return (
+    <button
+      disabled={pending}
+      onClick={async () => {
+        if (!confirm(`Mark "${leadName}" as junk (spam/duplicate/wrong number)?`)) return;
+        setPending(true);
+        await markAsJunk(leadId);
+        router.refresh();
+        setPending(false);
+      }}
+      className="w-full rounded-md border border-zinc-300 py-1.5 text-sm text-zinc-600 hover:bg-zinc-50 disabled:opacity-50"
+    >
+      {pending ? "Marking…" : "Mark as Junk"}
+    </button>
   );
 }

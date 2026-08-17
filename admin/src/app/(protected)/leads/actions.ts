@@ -43,6 +43,30 @@ export async function bulkUpdateStage(leadIds: string[], stage: LeadStage) {
   revalidatePath("/leads");
 }
 
+// Junk leads (spam/duplicate/wrong number) reuse the existing lost + invalidLead
+// taxonomy rather than a new stage value — adding a new stage would need a Postgres
+// CHECK-constraint migration, which isn't necessary when this maps cleanly already.
+export async function markAsJunk(leadId: string) {
+  const { supabase } = await requireManager();
+  const { error } = await supabase
+    .from("leads")
+    .update({ stage: "lost", lost_reason: "invalidLead" })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${leadId}`);
+}
+
+export async function bulkMarkAsJunk(leadIds: string[]) {
+  const { supabase } = await requireManager();
+  const { error } = await supabase
+    .from("leads")
+    .update({ stage: "lost", lost_reason: "invalidLead" })
+    .in("id", leadIds);
+  if (error) throw new Error(error.message);
+  revalidatePath("/leads");
+}
+
 export async function bulkReassignLeads(leadIds: string[], assignedTo: string) {
   const { supabase } = await requireManager();
   const { error } = await supabase

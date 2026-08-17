@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { StageBadge } from "@/components/stage-badge";
-import { LeadStageSelect, LeadAssignSelect } from "@/components/lead-detail-controls";
+import { LeadStageSelect, LeadAssignSelect, MarkAsJunkButton } from "@/components/lead-detail-controls";
 import { AddNoteForm } from "@/components/add-note-form";
 import {
   CITY_LABEL,
@@ -172,6 +172,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               telecallers={telecallers ?? []}
             />
           </section>
+          <MarkAsJunkButton leadId={lead.id} leadName={lead.name} />
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
   reassignLead,
   bulkUpdateStage,
   bulkReassignLeads,
+  bulkMarkAsJunk,
   setMeetingStage,
 } from "@/app/(protected)/leads/actions";
 
@@ -111,6 +112,15 @@ export function LeadsTable({ telecallers }: { telecallers: Profile[] }) {
   async function handleBulkAssign(tcId: string) {
     setBulkPending(true);
     await bulkReassignLeads([...selected], tcId);
+    setSelected(new Set());
+    await fetchLeads();
+    setBulkPending(false);
+  }
+
+  async function handleBulkJunk() {
+    if (!confirm(`Mark ${selected.size} lead(s) as junk (spam/duplicate/wrong number)?`)) return;
+    setBulkPending(true);
+    await bulkMarkAsJunk([...selected]);
     setSelected(new Set());
     await fetchLeads();
     setBulkPending(false);
@@ -222,6 +232,13 @@ export function LeadsTable({ telecallers }: { telecallers: Profile[] }) {
               </option>
             ))}
           </select>
+          <button
+            disabled={bulkPending}
+            onClick={handleBulkJunk}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-50 disabled:opacity-50"
+          >
+            Mark as Junk
+          </button>
           <button
             onClick={() => setSelected(new Set())}
             className="ml-auto text-zinc-500 hover:text-zinc-700"
