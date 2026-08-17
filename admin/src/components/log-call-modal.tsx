@@ -38,6 +38,7 @@ export function LogCallModal({
   const [futureTag, setFutureTag] = useState<FutureTag | null>(null);
   const [durationMinutes, setDurationMinutes] = useState(0);
   const [followupDate, setFollowupDate] = useState("");
+  const [followupTime, setFollowupTime] = useState("10:00");
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -48,7 +49,7 @@ export function LogCallModal({
       outcome,
       durationMinutes * 60,
       notes.trim() || null,
-      followupDate ? new Date(followupDate).toISOString() : null,
+      followupDate ? new Date(`${followupDate}T${followupTime || "10:00"}`).toISOString() : null,
       futureTag,
     );
     setPending(false);
@@ -120,7 +121,7 @@ export function LogCallModal({
         </div>
 
         <div className="mb-4">
-          <p className="mb-2 text-sm font-medium text-zinc-700">Follow-up Date</p>
+          <p className="mb-2 text-sm font-medium text-zinc-700">Follow-up Date &amp; Time</p>
           <div className="mb-2 flex flex-wrap gap-2">
             {SHORTCUTS.map((s) => (
               <button
@@ -136,12 +137,20 @@ export function LogCallModal({
               </button>
             ))}
           </div>
-          <input
-            type="date"
-            value={followupDate}
-            onChange={(e) => setFollowupDate(e.target.value)}
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-[#F5A623] focus:outline-none"
-          />
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={followupDate}
+              onChange={(e) => setFollowupDate(e.target.value)}
+              className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-[#F5A623] focus:outline-none"
+            />
+            <input
+              type="time"
+              value={followupTime}
+              onChange={(e) => setFollowupTime(e.target.value)}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-[#F5A623] focus:outline-none"
+            />
+          </div>
         </div>
 
         <div className="mb-6">

@@ -18,6 +18,7 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
   FutureTag? _futureTag;
   final _notesController = TextEditingController();
   DateTime? _followupDate;
+  TimeOfDay? _followupTime;
   int _durationMinutes = 0;
   bool _saving = false;
 
@@ -27,14 +28,34 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
     super.dispose();
   }
 
-  Future<void> _pickFollowupDate() async {
-    final picked = await showDatePicker(
+  // Picks a day (either a preset shortcut or via the date picker), then always
+  // asks for a time too — "call back tomorrow morning" needs both, not just the day.
+  Future<void> _pickFollowupDateTime([DateTime? presetDay]) async {
+    DateTime day;
+    if (presetDay != null) {
+      day = presetDay;
+    } else {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now().add(const Duration(days: 1)),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+      );
+      if (picked == null) return;
+      day = picked;
+    }
+    if (!mounted) return;
+
+    final time = await showTimePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialTime: _followupTime ?? const TimeOfDay(hour: 10, minute: 0),
     );
-    if (picked != null) setState(() => _followupDate = picked);
+    if (time == null) return;
+
+    setState(() {
+      _followupDate = DateTime(day.year, day.month, day.day);
+      _followupTime = time;
+    });
   }
 
   Future<void> _save() async {
@@ -52,7 +73,7 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
-          followupAt: _followupDate,
+          followupAt: _combinedFollowupDateTime,
           futureTag: _futureTag,
         );
     await Future.delayed(const Duration(milliseconds: 300));
@@ -286,8 +307,16 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GestureDetector(
-                  onTap: () => setState(() =>
-                      _followupDate = isSelected ? null : s.$2),
+                  onTap: () {
+                    if (isSelected) {
+                      setState(() {
+                        _followupDate = null;
+                        _followupTime = null;
+                      });
+                    } else {
+                      _pickFollowupDateTime(s.$2);
+                    }
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(
@@ -320,9 +349,9 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
           ),
         ),
         const SizedBox(height: 8),
-        // Custom date picker row
+        // Custom date + time picker row
         GestureDetector(
-      onTap: _pickFollowupDate,
+      onTap: () => _pickFollowupDateTime(),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -345,9 +374,9 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
             ),
             const SizedBox(width: 10),
             Text(
-              _followupDate != null
-                  ? 'Followup: ${_formatDate(_followupDate!)}'
-                  : 'Set followup date (optional)',
+              _combinedFollowupDateTime != null
+                  ? 'Followup: ${_formatDateTime(_combinedFollowupDateTime!)}'
+                  : 'Set followup date & time (optional)',
               style: TextStyle(
                 fontSize: 14,
                 color: _followupDate != null
@@ -361,7 +390,10 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
             if (_followupDate != null) ...[
               const Spacer(),
               GestureDetector(
-                onTap: () => setState(() => _followupDate = null),
+                onTap: () => setState(() {
+                  _followupDate = null;
+                  _followupTime = null;
+                }),
                 child: const Icon(Icons.clear, size: 16, color: AppColors.textSecondary),
               ),
             ],
@@ -370,6 +402,17 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
       ),
       ),  // GestureDetector
       ],
+    );
+  }
+
+  DateTime? get _combinedFollowupDateTime {
+    if (_followupDate == null || _followupTime == null) return null;
+    return DateTime(
+      _followupDate!.year,
+      _followupDate!.month,
+      _followupDate!.day,
+      _followupTime!.hour,
+      _followupTime!.minute,
     );
   }
 
@@ -405,11 +448,14 @@ class _LogOutcomeSheetState extends ConsumerState<LogOutcomeSheet> {
     }
   }
 
-  String _formatDate(DateTime dt) {
+  String _formatDateTime(DateTime dt) {
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
-    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour < 12 ? 'AM' : 'PM';
+    return '${dt.day} ${months[dt.month - 1]}, $hour12:$minute $period';
   }
 }
