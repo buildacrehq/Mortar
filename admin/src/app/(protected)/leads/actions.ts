@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireManager } from "@/lib/require-manager";
-import type { LeadStage, LeadFormInput } from "@/lib/types";
+import type { LeadStage, LeadFormInput, CallOutcome, FutureTag } from "@/lib/types";
 
 export async function updateLeadStage(leadId: string, stage: LeadStage) {
   const { supabase } = await requireManager();
@@ -127,6 +127,52 @@ export async function updateLeadFull(leadId: string, fields: LeadFormInput) {
     })
     .eq("id", leadId);
   if (error) throw new Error(error.message);
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${leadId}`);
+}
+
+// Mirrors Flutter's LeadsNotifier.logCall — inserts the call record and
+// updates the lead's outcome/contact time together, auto-advancing stage
+// the same way the mobile app does (interested -> called, notInterested ->
+// lost, future -> future; callback/notReachable leave stage untouched).
+export async function logCall(
+  leadId: string,
+  outcome: CallOutcome,
+  durationSeconds: number,
+  notes: string | null,
+  followupAt: string | null,
+  futureTag: FutureTag | null,
+) {
+  const { supabase, userId } = await requireManager();
+
+  const { error: logError } = await supabase.from("call_logs").insert({
+    lead_id: leadId,
+    called_by: userId,
+    called_at: new Date().toISOString(),
+    duration_seconds: durationSeconds,
+    outcome,
+    notes,
+  });
+  if (logError) throw new Error(logError.message);
+
+  const stageByOutcome: Partial<Record<CallOutcome, LeadStage>> = {
+    interested: "telecallerCallDone",
+    notInterested: "lost",
+    future: "future",
+  };
+
+  const { error: leadError } = await supabase
+    .from("leads")
+    .update({
+      last_outcome: outcome,
+      last_contacted_at: new Date().toISOString(),
+      followup_at: followupAt,
+      future_tag: futureTag,
+      ...(stageByOutcome[outcome] ? { stage: stageByOutcome[outcome] } : {}),
+    })
+    .eq("id", leadId);
+  if (leadError) throw new Error(leadError.message);
+
   revalidatePath("/leads");
   revalidatePath(`/leads/${leadId}`);
 }

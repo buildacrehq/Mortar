@@ -2,7 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { StageBadge } from "@/components/stage-badge";
-import { LeadStageSelect, LeadAssignSelect, MarkAsJunkButton } from "@/components/lead-detail-controls";
+import {
+  LeadStageSelect,
+  LeadAssignSelect,
+  MarkAsJunkButton,
+  LogCallButton,
+} from "@/components/lead-detail-controls";
 import { AddNoteForm } from "@/components/add-note-form";
 import { buildTimeline } from "@/lib/timeline";
 import {
@@ -201,6 +206,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               telecallers={telecallers ?? []}
             />
           </section>
+          <LogCallButton leadId={lead.id} />
           <MarkAsJunkButton leadId={lead.id} leadName={lead.name} />
         </div>
       </div>

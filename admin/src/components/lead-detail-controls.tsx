@@ -8,9 +8,11 @@ import {
   reassignLead,
   setMeetingStage,
   markAsJunk,
+  logCall,
 } from "@/app/(protected)/leads/actions";
 import { ScheduleMeetingModal } from "@/components/schedule-meeting-modal";
-import type { LeadStage, Profile } from "@/lib/types";
+import { LogCallModal } from "@/components/log-call-modal";
+import type { LeadStage, Profile, CallOutcome, FutureTag } from "@/lib/types";
 
 export function LeadStageSelect({
   leadId,
@@ -93,6 +95,38 @@ export function LeadAssignSelect({
         </option>
       ))}
     </select>
+  );
+}
+
+export function LogCallButton({ leadId }: { leadId: string }) {
+  const router = useRouter();
+  const [showModal, setShowModal] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="w-full rounded-md bg-[#0D1B2A] py-1.5 text-sm font-medium text-white hover:bg-[#1B2E45]"
+      >
+        Log Call
+      </button>
+      {showModal && (
+        <LogCallModal
+          onCancel={() => setShowModal(false)}
+          onConfirm={async (
+            outcome: CallOutcome,
+            durationSeconds: number,
+            notes: string | null,
+            followupAt: string | null,
+            futureTag: FutureTag | null,
+          ) => {
+            await logCall(leadId, outcome, durationSeconds, notes, followupAt, futureTag);
+            setShowModal(false);
+            router.refresh();
+          }}
+        />
+      )}
+    </>
   );
 }
 
