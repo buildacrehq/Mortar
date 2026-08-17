@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { STAGE_ORDER, STAGE_LABEL, STAGE_COLOR, CITY_LABEL } from "@/lib/constants";
 import {
@@ -59,7 +60,12 @@ export default async function DashboardPage() {
         <StatCard label="Total leads" value={leads.length} />
         <StatCard label="Today" value={todayCount} />
         <StatCard label="Calls (90d)" value={logs.length} />
-        <StatCard label="Overdue" value={overdueCount} accent={overdueCount > 0 ? "warn" : undefined} />
+        <StatCard
+          label="Overdue"
+          value={overdueCount}
+          accent={overdueCount > 0 ? "warn" : undefined}
+          href="/leads/followups"
+        />
         <StatCard label="Conversion" value={`${conversionRate.toFixed(1)}%`} />
       </div>
 
@@ -143,19 +149,29 @@ function StatCard({
   label,
   value,
   accent,
+  href,
 }: {
   label: string;
   value: number | string;
   accent?: "warn";
+  href?: string;
 }) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5">
+  const content = (
+    <>
       <p className="text-sm text-zinc-500">{label}</p>
       <p className={`mt-1 text-3xl font-semibold ${accent === "warn" ? "text-amber-600" : "text-[#0D1B2A]"}`}>
         {value}
       </p>
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link href={href} className="block rounded-xl border border-zinc-200 bg-white p-5 hover:bg-zinc-50">
+        {content}
+      </Link>
+    );
+  }
+  return <div className="rounded-xl border border-zinc-200 bg-white p-5">{content}</div>;
 }
 
 function CityCard({ stats }: { stats: ReturnType<typeof computeCityStats> }) {
