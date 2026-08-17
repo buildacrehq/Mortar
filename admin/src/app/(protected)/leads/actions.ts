@@ -107,6 +107,33 @@ export async function createLead(fields: LeadFormInput, assignedTo: string | nul
   return { id: data.id as string };
 }
 
+// Mirrors bulk_import_screen.dart's _import — dedup against existing phone
+// numbers happens client-side before this is called (same list the parse
+// step already used to flag duplicates in the preview).
+export async function bulkImportLeads(
+  leadsToImport: { name: string; phone: string }[],
+  source: LeadFormInput["source"],
+  serviceType: LeadFormInput["service_type"],
+  city: LeadFormInput["city"],
+  assignedTo: string | null,
+) {
+  const { supabase } = await requireManager();
+  const { error } = await supabase.from("leads").insert(
+    leadsToImport.map((l) => ({
+      name: l.name,
+      phone: l.phone,
+      source,
+      service_type: serviceType,
+      city,
+      assigned_to: assignedTo,
+      stage: "enquiryReceived",
+    })),
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath("/leads");
+  return { imported: leadsToImport.length };
+}
+
 export async function updateLeadFull(leadId: string, fields: LeadFormInput) {
   const { supabase } = await requireManager();
   const { error } = await supabase
