@@ -7,6 +7,7 @@ import 'package:buildacre_crm/features/leads/models/lead.dart';
 import 'package:buildacre_crm/features/leads/providers/leads_provider.dart';
 import 'package:buildacre_crm/features/leads/providers/filtered_leads_provider.dart';
 import 'package:buildacre_crm/features/leads/widgets/mark_as_lost_sheet.dart';
+import 'package:buildacre_crm/features/leads/widgets/schedule_meeting_sheet.dart';
 
 const _activeStages = [
   LeadStage.enquiryReceived,
@@ -399,6 +400,18 @@ class _KanbanCard extends ConsumerWidget {
         context: context,
         isScrollControlled: true,
         builder: (_) => MarkAsLostSheet(leadId: lead.id, leadName: lead.name),
+      );
+      return;
+    }
+    if (nextStage == LeadStage.meetingAtOffice) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => ScheduleMeetingSheet(
+          leadId: lead.id,
+          leadName: lead.name,
+          currentAssignedTo: lead.assignedTo,
+        ),
       );
       return;
     }

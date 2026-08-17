@@ -13,6 +13,7 @@ import 'package:buildacre_crm/features/calls/screens/log_outcome_sheet.dart';
 import 'package:buildacre_crm/features/leads/widgets/whatsapp_sheet.dart';
 import 'package:buildacre_crm/features/leads/widgets/add_note_sheet.dart';
 import 'package:buildacre_crm/features/leads/widgets/mark_as_lost_sheet.dart';
+import 'package:buildacre_crm/features/leads/widgets/schedule_meeting_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:buildacre_crm/features/auth/providers/auth_provider.dart';
 import 'package:buildacre_crm/features/auth/providers/profiles_provider.dart';
@@ -878,6 +879,16 @@ class _StageSelectorSheet extends StatelessWidget {
                       builder: (_) => MarkAsLostSheet(
                         leadId: lead.id,
                         leadName: lead.name,
+                      ),
+                    );
+                  } else if (s == LeadStage.meetingAtOffice) {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (_) => ScheduleMeetingSheet(
+                        leadId: lead.id,
+                        leadName: lead.name,
+                        currentAssignedTo: lead.assignedTo,
                       ),
                     );
                   } else {

@@ -265,6 +265,26 @@ class LeadsNotifier extends StateNotifier<List<Lead>> {
     }
   }
 
+  // ─── Schedule Meeting (stage → meetingAtOffice + follow-up time + owner) ──
+
+  Future<void> scheduleMeeting(String id, DateTime meetingAt, String assignedTo) async {
+    _updateLocal(id, (l) => l.copyWith(
+          stage: LeadStage.meetingAtOffice,
+          followupAt: meetingAt,
+          assignedTo: assignedTo,
+        ));
+    try {
+      await _service.updateFields(id, {
+        'stage': LeadStage.meetingAtOffice.name,
+        'followup_at': meetingAt.toUtc().toIso8601String(),
+        'assigned_to': assignedTo,
+      });
+    } catch (_) {
+      _ref.read(leadsMutationErrorProvider.notifier).state = 'Meeting update failed. Check your connection.';
+      await _loadPage(0);
+    }
+  }
+
   // ─── Update Planning Timeline ─────────────────────────────────────────────
 
   Future<void> updatePlanningTimeline(String id, PlanningTimeline? timeline) async {
