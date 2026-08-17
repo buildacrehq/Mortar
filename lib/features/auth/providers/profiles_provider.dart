@@ -25,7 +25,7 @@ class TeamMember {
     this.phone,
     this.isActive = true,
     this.serviceTypes = const [],
-    this.callingType = CallingType.exotel,
+    this.callingType = CallingType.personal,
   });
 
   String get initials {
@@ -63,9 +63,9 @@ TeamMember _fromMap(Map<String, dynamic> m) {
     phone: m['phone'] as String?,
     isActive: m['is_active'] as bool? ?? true,
     serviceTypes: serviceTypes,
-    callingType: (m['calling_type'] as String?) == 'personal'
-        ? CallingType.personal
-        : CallingType.exotel,
+    callingType: (m['calling_type'] as String?) == 'exotel'
+        ? CallingType.exotel
+        : CallingType.personal,
   );
 }
 

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:buildacre_crm/core/constants/app_constants.dart';
@@ -716,111 +714,23 @@ class _CallBar extends ConsumerWidget {
   }
 
   void _initiateCall(BuildContext context, WidgetRef ref) async {
-    final user = ref.read(authProvider);
-    final members = ref.read(profilesProvider);
-
-    // Check the ASSIGNED TC's calling type (not manager's type)
-    // If manager/admin taps Call, use the assigned TC's setting
-    final assignedTcId = lead.assignedTo.isNotEmpty ? lead.assignedTo : user?.id ?? '';
-    final relevantMember = members.firstWhere(
-      (m) => m.id == assignedTcId,
-      orElse: () => members.firstWhere(
-        (m) => m.id == user?.id,
-        orElse: () => TeamMember(id: '', name: '', email: '', role: UserRole.telecaller),
-      ),
-    );
-
-    if (relevantMember.callingType == CallingType.personal) {
-      // Personal/company number — open phone dialer directly
-      String phone = lead.phone.replaceAll(RegExp(r'\D'), '');
-      if (phone.length > 10) phone = phone.substring(phone.length - 10);
-      try {
-        await launchUrl(
-          Uri.parse('tel:+91$phone'),
-          mode: LaunchMode.externalApplication,
-        );
-      } catch (_) {}
-      // After dialing, show log outcome sheet so TC can record what happened
-      await Future.delayed(const Duration(milliseconds: 800));
-      if (context.mounted) {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          builder: (_) => LogOutcomeSheet(leadId: lead.id),
-        );
-      }
-    } else {
-      // Exotel click-to-call — backend handles the call
-      final tcPhone = relevantMember.phone ?? '';
-      if (tcPhone.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('TC phone number not set. Add it in Settings → Profile.'),
-          backgroundColor: Colors.orangeAccent,
-          behavior: SnackBarBehavior.floating,
-        ));
-        return;
-      }
-
-      // Show initiating indicator
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Row(children: [
-          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-          SizedBox(width: 12),
-          Text('Connecting call via Exotel...'),
-        ]),
-        backgroundColor: AppColors.navy,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 4),
-      ));
-
-      try {
-        String customerPhone = lead.phone.replaceAll(RegExp(r'\D'), '');
-        if (customerPhone.length > 10) customerPhone = customerPhone.substring(customerPhone.length - 10);
-
-        final response = await http.post(
-          Uri.parse('${AppConstants.backendUrl}/exotel/click-to-call'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'leadId': lead.id,
-            'tcPhone': '+91${tcPhone.replaceAll(RegExp(r'\D'), '').substring(tcPhone.replaceAll(RegExp(r'\D'), '').length > 10 ? tcPhone.replaceAll(RegExp(r'\D'), '').length - 10 : 0)}',
-            'customerPhone': '+91$customerPhone',
-            'callerId': AppConstants.exotelPhone,
-          }),
-        );
-
-        if (context.mounted) {
-          if (response.statusCode == 200) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('✅ Call initiated — your phone will ring shortly'),
-              backgroundColor: AppColors.stageWon,
-              behavior: SnackBarBehavior.floating,
-            ));
-            // Show outcome sheet after delay (TC needs time to finish call)
-            await Future.delayed(const Duration(seconds: 3));
-            if (context.mounted) {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => LogOutcomeSheet(leadId: lead.id),
-              );
-            }
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Call failed: ${response.body}'),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-            ));
-          }
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ));
-        }
-      }
+    // Dial pad only — Exotel click-to-call is disabled for now.
+    String phone = lead.phone.replaceAll(RegExp(r'\D'), '');
+    if (phone.length > 10) phone = phone.substring(phone.length - 10);
+    try {
+      await launchUrl(
+        Uri.parse('tel:+91$phone'),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {}
+    // After dialing, show log outcome sheet so TC can record what happened
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (context.mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => LogOutcomeSheet(leadId: lead.id),
+      );
     }
   }
 

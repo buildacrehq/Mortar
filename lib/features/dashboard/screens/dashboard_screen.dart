@@ -107,8 +107,6 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _buildPerformanceBanner(context, tcStats),
           const SizedBox(height: 10),
-          _buildRecordingsBanner(context, totalCalls),
-          const SizedBox(height: 10),
           _buildCityBanner(context, leads),
           const SizedBox(height: 10),
           _buildCalendarBanner(context, leads),
@@ -396,42 +394,6 @@ class DashboardScreen extends ConsumerWidget {
                           fontSize: 14)),
                   Text(
                     'Bangalore $blr  ·  Mysore $mys',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecordingsBanner(BuildContext context, int totalCalls) {
-    return GestureDetector(
-      onTap: () => context.push('/dashboard/recordings'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.voicemail, color: AppColors.navy, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Call Recordings',
-                    style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
-                  ),
-                  Text(
-                    '$totalCalls calls logged · Tap to review',
                     style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
                 ],
