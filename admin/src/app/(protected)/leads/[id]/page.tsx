@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { StageBadge } from "@/components/stage-badge";
 import { LeadStageSelect, LeadAssignSelect, MarkAsJunkButton } from "@/components/lead-detail-controls";
 import { AddNoteForm } from "@/components/add-note-form";
+import { buildTimeline } from "@/lib/timeline";
 import {
   CITY_LABEL,
   SOURCE_LABEL,
@@ -45,6 +46,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   if (!lead) notFound();
 
+  const timeline = buildTimeline(lead, callLogs ?? [], notes ?? []);
+
   return (
     <div>
       <Link href="/leads" className="mb-4 inline-block text-sm text-zinc-500 hover:text-zinc-700">
@@ -58,7 +61,15 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             {lead.phone} {lead.email ? `· ${lead.email}` : ""}
           </p>
         </div>
-        <StageBadge stage={lead.stage} />
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/leads/${lead.id}/edit`}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            Edit
+          </Link>
+          <StageBadge stage={lead.stage} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -151,6 +162,24 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 ))}
               </ul>
             )}
+          </section>
+
+          <section className="rounded-xl border border-zinc-200 bg-white p-5">
+            <h2 className="mb-4 text-sm font-semibold text-zinc-500">Timeline</h2>
+            <ul className="space-y-3 border-l-2 border-zinc-100 pl-4">
+              {timeline.map((activity, i) => (
+                <li key={i} className="relative text-sm">
+                  <span className="absolute -left-[21px] top-1 h-2 w-2 rounded-full bg-[#F5A623]" />
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-medium text-[#0D1B2A]">{activity.title}</span>
+                    <span className="text-xs text-zinc-400">
+                      {new Date(activity.at).toLocaleString()}
+                    </span>
+                  </div>
+                  {activity.subtitle && <p className="mt-0.5 text-zinc-600">{activity.subtitle}</p>}
+                </li>
+              ))}
+            </ul>
           </section>
         </div>
 

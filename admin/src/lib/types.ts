@@ -108,3 +108,20 @@ export type LeadNote = {
   text: string;
   created_at: string;
 };
+
+// Shared shape for the Add/Edit lead form — everything except stage and
+// assignment, which have their own dedicated controls elsewhere.
+export type LeadFormInput = {
+  name: string;
+  phone: string;
+  email: string;
+  source: LeadSource;
+  service_type: ServiceType;
+  city: City;
+  area: string;
+  plot_size: string;
+  budget: string;
+  notes: string;
+  khata_type: KhataType | "";
+  planning_timeline: PlanningTimeline | "";
+};

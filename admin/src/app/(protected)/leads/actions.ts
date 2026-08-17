@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireManager } from "@/lib/require-manager";
-import type { LeadStage } from "@/lib/types";
+import type { LeadStage, LeadFormInput } from "@/lib/types";
 
 export async function updateLeadStage(leadId: string, stage: LeadStage) {
   const { supabase } = await requireManager();
@@ -75,6 +75,60 @@ export async function bulkReassignLeads(leadIds: string[], assignedTo: string) {
     .in("id", leadIds);
   if (error) throw new Error(error.message);
   revalidatePath("/leads");
+}
+
+// Mirrors Flutter's addLead — new leads start at enquiryReceived, optionally
+// pre-assigned to a telecaller (admin/manager pick one explicitly, since unlike
+// the mobile app there's no "current user is a telecaller" to default to).
+export async function createLead(fields: LeadFormInput, assignedTo: string | null) {
+  const { supabase } = await requireManager();
+  const { data, error } = await supabase
+    .from("leads")
+    .insert({
+      name: fields.name,
+      phone: fields.phone,
+      email: fields.email || null,
+      source: fields.source,
+      service_type: fields.service_type,
+      city: fields.city,
+      area: fields.area || null,
+      plot_size: fields.plot_size || null,
+      budget: fields.budget || null,
+      notes: fields.notes || null,
+      khata_type: fields.khata_type || null,
+      planning_timeline: fields.planning_timeline || null,
+      assigned_to: assignedTo,
+      stage: "enquiryReceived",
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/leads");
+  return { id: data.id as string };
+}
+
+export async function updateLeadFull(leadId: string, fields: LeadFormInput) {
+  const { supabase } = await requireManager();
+  const { error } = await supabase
+    .from("leads")
+    .update({
+      name: fields.name,
+      phone: fields.phone,
+      email: fields.email || null,
+      source: fields.source,
+      service_type: fields.service_type,
+      city: fields.city,
+      area: fields.area || null,
+      plot_size: fields.plot_size || null,
+      budget: fields.budget || null,
+      notes: fields.notes || null,
+      khata_type: fields.khata_type || null,
+      planning_timeline: fields.planning_timeline || null,
+    })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${leadId}`);
 }
 
 export async function addLeadNote(leadId: string, text: string) {
