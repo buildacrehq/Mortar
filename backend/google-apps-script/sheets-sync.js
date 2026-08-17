@@ -2,8 +2,8 @@
 // Paste this code in: Google Sheets → Extensions → Apps Script
 // Then set a trigger: onFormSubmit or onChange
 
-const BACKEND_URL = 'https://your-vercel-url.vercel.app'; // Update after Vercel deploy
-const WEBHOOK_SECRET = 'mortar_webhook_secret_2025';
+const BACKEND_URL = 'https://mortar-seven.vercel.app';
+const WEBHOOK_SECRET = 'mortar_webhook_secret_2025'; // Must match WEBHOOK_SECRET in the backend's Vercel env vars
 
 // ─── Trigger: runs when a new lead row is added ───────────────────────────────
 function onNewLead(e) {
