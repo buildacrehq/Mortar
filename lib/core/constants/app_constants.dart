@@ -128,7 +128,7 @@ extension FutureTagExt on FutureTag {
     switch (this) {
       case FutureTag.hot:      return 'Hot';
       case FutureTag.warm:     return 'Warm';
-      case FutureTag.cool:     return 'Cool';
+      case FutureTag.cool:     return 'Cold';
       case FutureTag.longTerm: return 'Long Term';
     }
   }

@@ -80,7 +80,7 @@ export const SERVICE_TYPE_LABEL: Record<ServiceType, string> = {
 export const FUTURE_TAG_LABEL: Record<FutureTag, string> = {
   hot: "Hot",
   warm: "Warm",
-  cool: "Cool",
+  cool: "Cold",
   longTerm: "Long Term",
 };
 
