@@ -15,6 +15,10 @@ const CITIES: City[] = ["bangalore", "mysore"];
 function parseLeads(text: string, existingPhones: Set<string>): ParsedLead[] {
   const lines = text.trim().split("\n");
   const parsed: ParsedLead[] = [];
+  // Tracks phones already seen in this same paste — without this, pasting the
+  // same number twice both get marked "New" (existingPhones only knows about
+  // leads already in the database) and both would be inserted.
+  const seenInBatch = new Set<string>();
 
   for (const line of lines) {
     if (!line.trim()) continue;
@@ -42,8 +46,9 @@ function parseLeads(text: string, existingPhones: Set<string>): ParsedLead[] {
     parsed.push({
       name: name || `Lead ${phone}`,
       phone,
-      isDuplicate: existingPhones.has(phone),
+      isDuplicate: existingPhones.has(phone) || seenInBatch.has(phone),
     });
+    seenInBatch.add(phone);
   }
 
   return parsed;
