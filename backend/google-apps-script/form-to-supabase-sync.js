@@ -48,15 +48,26 @@ var CITY_MAP = {
   'mysore': 'mysore',
 };
 
+// Sheet cells can come back as Date/Number objects (not strings) depending on
+// how a cell happens to be formatted, even in a column that's normally text —
+// e.g. someone's "other location" answer getting auto-interpreted as a date.
+// e.namedValues (the live trigger path) is always plain strings already, but
+// backfillExistingRows reads raw getValues() output, so every field needs to
+// survive a non-string value safely.
+function toStr_(value) {
+  if (value === null || value === undefined || value === '') return '';
+  return String(value).trim();
+}
+
 // ─── Shared sync logic — used by both the live trigger and the backfill ────
 // Returns 'synced' | 'duplicate' | 'skipped' | 'error' for the caller to tally.
 function syncLeadToSupabase_(fields) {
-  var name = (fields.name || '').trim();
-  var phone = (fields.phone || '').replace(/\D/g, '');
-  var email = (fields.email || '').trim() || null;
-  var projectInitiation = (fields.projectInitiation || '').trim();
-  var location = (fields.location || '').trim();
-  var otherLocation = (fields.otherLocation || '').trim();
+  var name = toStr_(fields.name);
+  var phone = toStr_(fields.phone).replace(/\D/g, '');
+  var email = toStr_(fields.email) || null;
+  var projectInitiation = toStr_(fields.projectInitiation);
+  var location = toStr_(fields.location);
+  var otherLocation = toStr_(fields.otherLocation);
 
   if (!name || !phone) {
     Logger.log('Skipping — missing name or phone. Raw: ' + JSON.stringify(fields));
