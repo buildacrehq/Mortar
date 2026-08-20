@@ -64,6 +64,16 @@ function syncLeadToSupabase_(fields) {
   }
   if (phone.length > 10) phone = phone.slice(-10);
 
+  // Backfill passes the sheet's original submission timestamp (column A —
+  // still Google Forms' auto-generated Timestamp column underneath, even
+  // though it's been relabeled "DNP on 20/7") so historical leads keep their
+  // real dates instead of all showing as created today. Live form
+  // submissions don't set this — "now" is correct for those.
+  var createdAt = null;
+  if (fields.createdAt instanceof Date && !isNaN(fields.createdAt.getTime())) {
+    createdAt = fields.createdAt.toISOString();
+  }
+
   var planningTimeline = TIMELINE_MAP[projectInitiation.toLowerCase()] || null;
   if (projectInitiation && !planningTimeline) {
     Logger.log('Unrecognized Project Initiation value "' + projectInitiation + '" for ' + name + ' — left planning_timeline blank.');
@@ -112,6 +122,7 @@ function syncLeadToSupabase_(fields) {
     planning_timeline: planningTimeline,
     stage: 'enquiryReceived',
   };
+  if (createdAt) payload.created_at = createdAt;
 
   var response = UrlFetchApp.fetch(config.supabaseUrl + '/rest/v1/leads', {
     method: 'post',
@@ -187,6 +198,9 @@ function backfillExistingRows() {
       projectInitiation: get('Project Initiation'),
       location: get('Location'),
       otherLocation: get('If your location is not listed above, please enter it here'),
+      // Column A is Google Forms' auto Timestamp column regardless of its
+      // current header label — always the true submission time.
+      createdAt: data[row][0],
     });
     tally[result] = (tally[result] || 0) + 1;
     Utilities.sleep(150); // stay well under Supabase/Apps Script rate limits
