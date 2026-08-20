@@ -37,8 +37,15 @@ class AuthNotifier extends StateNotifier<AppUser?> {
       if (session != null) {
         _loadProfile(session.user.id);
       } else {
-        // No session — mark loading done so login screen shows immediately
-        _ref.read(authLoadingProvider.notifier).state = false;
+        // No session — mark loading done so login screen shows immediately.
+        // Deferred to a microtask: Riverpod forbids a provider (AuthNotifier,
+        // via authProvider) from writing to another provider (authLoadingProvider)
+        // synchronously while it's still being constructed. Release builds
+        // strip that assertion so this was silently tolerated, but it throws
+        // immediately under `flutter run` (debug) or `flutter test`.
+        Future.microtask(() {
+          if (mounted) _ref.read(authLoadingProvider.notifier).state = false;
+        });
       }
 
       supabase.auth.onAuthStateChange.listen((data) {
@@ -51,8 +58,11 @@ class AuthNotifier extends StateNotifier<AppUser?> {
         }
       });
     } catch (_) {
-      // Init failed — mark loading done so app doesn't get stuck on splash
-      if (mounted) _ref.read(authLoadingProvider.notifier).state = false;
+      // Init failed — mark loading done so app doesn't get stuck on splash.
+      // Same deferral reason as above.
+      Future.microtask(() {
+        if (mounted) _ref.read(authLoadingProvider.notifier).state = false;
+      });
     }
   }
 
