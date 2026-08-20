@@ -8,6 +8,6 @@ void main() {
       const ProviderScope(child: BuildacreCrmApp()),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Buildacre CRM'), findsOneWidget);
+    expect(find.text('Mortar'), findsOneWidget);
   });
 }
