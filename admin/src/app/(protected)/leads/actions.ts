@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { requireManager } from "@/lib/require-manager";
-import { pickAssigneeForNewLead, pickAssigneesForBatch } from "@/lib/assignment-rules";
 import type { LeadStage, LeadFormInput, CallOutcome, FutureTag } from "@/lib/types";
 
 export async function updateLeadStage(leadId: string, stage: LeadStage) {
@@ -81,12 +80,10 @@ export async function bulkReassignLeads(leadIds: string[], assignedTo: string) {
 // Mirrors Flutter's addLead — new leads start at enquiryReceived, optionally
 // pre-assigned to a telecaller (admin/manager pick one explicitly, since unlike
 // the mobile app there's no "current user is a telecaller" to default to).
+// Leaving assignedTo null lets the assign_new_lead DB trigger apply any
+// matching assignment rule — the same trigger every insert path goes through.
 export async function createLead(fields: LeadFormInput, assignedTo: string | null) {
   const { supabase } = await requireManager();
-
-  // Only consult routing rules if the admin left assignment blank — an
-  // explicit choice always wins over automatic rules.
-  const finalAssignee = assignedTo ?? (await pickAssigneeForNewLead(supabase, fields.source, null));
 
   const { data, error } = await supabase
     .from("leads")
@@ -103,7 +100,7 @@ export async function createLead(fields: LeadFormInput, assignedTo: string | nul
       notes: fields.notes || null,
       khata_type: fields.khata_type || null,
       planning_timeline: fields.planning_timeline || null,
-      assigned_to: finalAssignee,
+      assigned_to: assignedTo,
       stage: "enquiryReceived",
     })
     .select("id")
@@ -125,19 +122,18 @@ export async function bulkImportLeads(
 ) {
   const { supabase } = await requireManager();
 
-  // Same rule: explicit choice wins, rules only apply when left unassigned.
-  const assignees = assignedTo
-    ? new Array(leadsToImport.length).fill(assignedTo)
-    : await pickAssigneesForBatch(supabase, source, null, leadsToImport.length);
-
+  // Explicit choice wins for the whole batch; otherwise leave assigned_to
+  // null and let the assign_new_lead DB trigger apply a matching rule
+  // per-row (it round-robins correctly across the batch since each row is
+  // committed before the next row's trigger runs).
   const { error } = await supabase.from("leads").insert(
-    leadsToImport.map((l, i) => ({
+    leadsToImport.map((l) => ({
       name: l.name,
       phone: l.phone,
       source,
       service_type: serviceType,
       city,
-      assigned_to: assignees[i],
+      assigned_to: assignedTo,
       stage: "enquiryReceived",
     })),
   );

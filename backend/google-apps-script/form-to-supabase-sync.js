@@ -48,59 +48,6 @@ var CITY_MAP = {
   'mysore': 'mysore',
 };
 
-// Looks up assignment_rules (managed from the admin site's Assignment page)
-// and returns who a new lead should go to, round-robin among the rule's pool
-// (whoever currently has the fewest total assigned leads). Returns null if
-// no active rule matches — lead is left unassigned, same as before rules existed.
-function pickAssignee_(supabaseUrl, authHeaders, source, campaign) {
-  var rule = null;
-
-  if (campaign) {
-    var campaignResponse = UrlFetchApp.fetch(
-      supabaseUrl + '/rest/v1/assignment_rules?source=eq.' + encodeURIComponent(source) +
-        '&campaign=eq.' + encodeURIComponent(campaign) + '&is_active=eq.true&select=assignee_ids',
-      { method: 'get', headers: authHeaders, muteHttpExceptions: true },
-    );
-    if (campaignResponse.getResponseCode() === 200) {
-      var campaignRules = JSON.parse(campaignResponse.getContentText());
-      if (campaignRules.length > 0) rule = campaignRules[0];
-    }
-  }
-
-  if (!rule) {
-    var sourceResponse = UrlFetchApp.fetch(
-      supabaseUrl + '/rest/v1/assignment_rules?source=eq.' + encodeURIComponent(source) +
-        '&campaign=is.null&is_active=eq.true&select=assignee_ids',
-      { method: 'get', headers: authHeaders, muteHttpExceptions: true },
-    );
-    if (sourceResponse.getResponseCode() === 200) {
-      var sourceRules = JSON.parse(sourceResponse.getContentText());
-      if (sourceRules.length > 0) rule = sourceRules[0];
-    }
-  }
-
-  if (!rule || !rule.assignee_ids || rule.assignee_ids.length === 0) return null;
-  if (rule.assignee_ids.length === 1) return rule.assignee_ids[0];
-
-  var lowest = null;
-  var lowestCount = Infinity;
-  for (var i = 0; i < rule.assignee_ids.length; i++) {
-    var id = rule.assignee_ids[i];
-    var countResponse = UrlFetchApp.fetch(
-      supabaseUrl + '/rest/v1/leads?assigned_to=eq.' + encodeURIComponent(id) + '&select=id',
-      { method: 'get', headers: Object.assign({ Prefer: 'count=exact' }, authHeaders), muteHttpExceptions: true },
-    );
-    var contentRange = countResponse.getHeaders()['Content-Range'] || countResponse.getHeaders()['content-range'] || '';
-    var total = parseInt(contentRange.split('/')[1], 10);
-    if (isNaN(total)) total = JSON.parse(countResponse.getContentText()).length;
-    if (total < lowestCount) {
-      lowestCount = total;
-      lowest = id;
-    }
-  }
-  return lowest;
-}
-
 // Sheet cells can come back as Date/Number objects (not strings) depending on
 // how a cell happens to be formatted, even in a column that's normally text —
 // e.g. someone's "other location" answer getting auto-interpreted as a date.
@@ -172,13 +119,9 @@ function syncLeadToSupabase_(fields) {
     }
   }
 
-  // Auto-assign via the same assignment_rules table the admin site manages
-  // (Assignment page → Assignment Rules). This form never reports a campaign,
-  // so only a source-only rule (campaign IS NULL, source = 'website') can
-  // match here — a rule with a specific campaign would only ever be used by
-  // leads that came in with one (e.g. a future direct Meta integration).
-  var assignedTo = pickAssignee_(config.supabaseUrl, authHeaders, 'website', null);
-
+  // assigned_to is left null here — the assign_new_lead DB trigger (see
+  // supabase/migrations/003_lead_auto_assign_trigger.sql) fills it in from
+  // assignment_rules on insert, the same as every other lead entry point.
   // service_type has a NOT NULL CHECK constraint (construction/renovation/
   // interiors) but this form never asks for it — defaulting to construction,
   // Buildacre's primary service. Revisit if the form ever adds this question.
@@ -191,7 +134,7 @@ function syncLeadToSupabase_(fields) {
     city: city,
     area: location.toLowerCase() === 'other' ? otherLocation || null : null,
     planning_timeline: planningTimeline,
-    assigned_to: assignedTo,
+    assigned_to: null,
     stage: 'enquiryReceived',
   };
   if (createdAt) payload.created_at = createdAt;

@@ -54,6 +54,32 @@ export async function createAssignmentRule(
   revalidatePath("/assignment");
 }
 
+export async function updateAssignmentRule(
+  id: string,
+  source: LeadSource,
+  campaign: string | null,
+  assigneeIds: string[],
+) {
+  const { supabase } = await requireManager();
+  if (assigneeIds.length === 0) throw new Error("Pick at least one telecaller");
+
+  const { error } = await supabase
+    .from("assignment_rules")
+    .update({ source, campaign: campaign || null, assignee_ids: assigneeIds })
+    .eq("id", id);
+  if (error) {
+    if (error.message.includes("assignment_rules_source_campaign_key")) {
+      throw new Error(
+        campaign
+          ? `A rule for ${source} + "${campaign}" already exists — pick a different combination.`
+          : `A source-only rule for ${source} already exists — pick a different combination.`,
+      );
+    }
+    throw new Error(error.message);
+  }
+  revalidatePath("/assignment");
+}
+
 export async function deleteAssignmentRule(id: string) {
   const { supabase } = await requireManager();
   const { error } = await supabase.from("assignment_rules").delete().eq("id", id);

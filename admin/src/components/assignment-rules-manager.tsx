@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SOURCE_LABEL } from "@/lib/constants";
 import {
   createAssignmentRule,
+  updateAssignmentRule,
   deleteAssignmentRule,
   toggleAssignmentRule,
 } from "@/app/(protected)/assignment/actions";
@@ -19,6 +20,7 @@ export function AssignmentRulesManager({
   telecallers: Profile[];
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingRule, setEditingRule] = useState<AssignmentRule | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -37,12 +39,22 @@ export function AssignmentRulesManager({
     setPendingId(null);
   }
 
+  function startEdit(rule: AssignmentRule) {
+    setError(null);
+    setShowForm(false);
+    setEditingRule(rule);
+  }
+
   return (
     <section className="rounded-xl border border-zinc-200 bg-white p-5">
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-zinc-500">Assignment Rules</h2>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            setEditingRule(null);
+            setError(null);
+            setShowForm((v) => !v);
+          }}
           className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
         >
           {showForm ? "Cancel" : "+ Add Rule"}
@@ -64,6 +76,15 @@ export function AssignmentRulesManager({
         <RuleForm
           telecallers={telecallers}
           onDone={() => setShowForm(false)}
+          onError={setError}
+        />
+      )}
+
+      {editingRule && (
+        <RuleForm
+          telecallers={telecallers}
+          initial={editingRule}
+          onDone={() => setEditingRule(null)}
           onError={setError}
         />
       )}
@@ -96,6 +117,13 @@ export function AssignmentRulesManager({
               <div className="flex items-center gap-3 text-xs">
                 <button
                   disabled={pendingId === rule.id}
+                  onClick={() => startEdit(rule)}
+                  className="text-zinc-500 hover:text-zinc-700 disabled:opacity-50"
+                >
+                  Edit
+                </button>
+                <button
+                  disabled={pendingId === rule.id}
                   onClick={() => handleToggle(rule.id, rule.is_active)}
                   className="text-zinc-500 hover:text-zinc-700 disabled:opacity-50"
                 >
@@ -119,16 +147,18 @@ export function AssignmentRulesManager({
 
 function RuleForm({
   telecallers,
+  initial,
   onDone,
   onError,
 }: {
   telecallers: Profile[];
+  initial?: AssignmentRule;
   onDone: () => void;
   onError: (msg: string | null) => void;
 }) {
-  const [source, setSource] = useState<LeadSource>("website");
-  const [campaign, setCampaign] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [source, setSource] = useState<LeadSource>(initial?.source ?? "website");
+  const [campaign, setCampaign] = useState(initial?.campaign ?? "");
+  const [selectedIds, setSelectedIds] = useState<string[]>(initial?.assignee_ids ?? []);
   const [pending, setPending] = useState(false);
 
   function toggleTc(id: string) {
@@ -144,10 +174,14 @@ function RuleForm({
     }
     setPending(true);
     try {
-      await createAssignmentRule(source, campaign.trim() || null, selectedIds);
+      if (initial) {
+        await updateAssignmentRule(initial.id, source, campaign.trim() || null, selectedIds);
+      } else {
+        await createAssignmentRule(source, campaign.trim() || null, selectedIds);
+      }
       onDone();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to create rule");
+      onError(err instanceof Error ? err.message : "Failed to save rule");
     } finally {
       setPending(false);
     }
@@ -210,7 +244,7 @@ function RuleForm({
         disabled={pending}
         className="rounded-md bg-[#0D1B2A] px-4 py-2 text-sm font-medium text-white hover:bg-[#1B2E45] disabled:opacity-50"
       >
-        {pending ? "Saving…" : "Save Rule"}
+        {pending ? "Saving…" : initial ? "Update Rule" : "Save Rule"}
       </button>
     </form>
   );
