@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StageBadge } from "@/components/stage-badge";
 import { ScheduleMeetingModal } from "@/components/schedule-meeting-modal";
-import { STAGE_ORDER, STAGE_LABEL, CITY_LABEL, OUTCOME_LABEL, PAGE_SIZE } from "@/lib/constants";
+import { STAGE_ORDER, STAGE_LABEL, CITY_LABEL, SOURCE_LABEL, OUTCOME_LABEL, PAGE_SIZE } from "@/lib/constants";
 import type { Lead, Profile, LeadStage } from "@/lib/types";
 import {
   updateLeadStage,
@@ -264,6 +264,7 @@ export function LeadsTable({ telecallers }: { telecallers: Profile[] }) {
               </th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">City</th>
+              <th className="px-4 py-3">Source</th>
               <th className="px-4 py-3">Stage</th>
               <th className="px-4 py-3">Assigned To</th>
               <th className="px-4 py-3">Last Outcome</th>
@@ -278,13 +279,13 @@ export function LeadsTable({ telecallers }: { telecallers: Profile[] }) {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-zinc-400">
+                <td colSpan={10} className="px-4 py-8 text-center text-zinc-400">
                   Loading…
                 </td>
               </tr>
             ) : leads.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-zinc-400">
+                <td colSpan={10} className="px-4 py-8 text-center text-zinc-400">
                   No leads match these filters.
                 </td>
               </tr>
@@ -305,6 +306,7 @@ export function LeadsTable({ telecallers }: { telecallers: Profile[] }) {
                   </td>
                   <td className="px-4 py-2.5 text-zinc-600">{lead.phone}</td>
                   <td className="px-4 py-2.5 text-zinc-600">{CITY_LABEL[lead.city]}</td>
+                  <td className="px-4 py-2.5 text-zinc-600">{SOURCE_LABEL[lead.source]}</td>
                   <td className="px-4 py-2.5">
                     <select
                       value={lead.stage}
