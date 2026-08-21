@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireManager } from "@/lib/require-manager";
-import type { AssignmentStrategy } from "@/lib/types";
+import type { AssignmentStrategy, LeadSource } from "@/lib/types";
 
 export async function setAssignmentStrategy(strategy: AssignmentStrategy) {
   const { supabase } = await requireManager();
@@ -21,6 +21,49 @@ export async function setAssignmentStrategy(strategy: AssignmentStrategy) {
         .from("team_settings")
         .insert({ assignment_strategy: strategy, updated_at: new Date().toISOString() });
 
+  if (error) throw new Error(error.message);
+  revalidatePath("/assignment");
+}
+
+// Routes new leads by source (and optionally campaign) to a pool of
+// telecallers instead of the generic strategy above — e.g. "all Website
+// leads go to Priya" or "Facebook campaign 23 rotates between Ravi and Divya".
+export async function createAssignmentRule(
+  source: LeadSource,
+  campaign: string | null,
+  assigneeIds: string[],
+) {
+  const { supabase } = await requireManager();
+  if (assigneeIds.length === 0) throw new Error("Pick at least one telecaller");
+
+  const { error } = await supabase.from("assignment_rules").insert({
+    source,
+    campaign: campaign || null,
+    assignee_ids: assigneeIds,
+  });
+  if (error) {
+    if (error.message.includes("assignment_rules_source_campaign_key")) {
+      throw new Error(
+        campaign
+          ? `A rule for ${source} + "${campaign}" already exists — delete it first to replace it.`
+          : `A source-only rule for ${source} already exists — delete it first to replace it.`,
+      );
+    }
+    throw new Error(error.message);
+  }
+  revalidatePath("/assignment");
+}
+
+export async function deleteAssignmentRule(id: string) {
+  const { supabase } = await requireManager();
+  const { error } = await supabase.from("assignment_rules").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/assignment");
+}
+
+export async function toggleAssignmentRule(id: string, isActive: boolean) {
+  const { supabase } = await requireManager();
+  const { error } = await supabase.from("assignment_rules").update({ is_active: isActive }).eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/assignment");
 }

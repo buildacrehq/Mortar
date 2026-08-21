@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireManager } from "@/lib/require-manager";
+import { pickAssigneeForNewLead, pickAssigneesForBatch } from "@/lib/assignment-rules";
 import type { LeadStage, LeadFormInput, CallOutcome, FutureTag } from "@/lib/types";
 
 export async function updateLeadStage(leadId: string, stage: LeadStage) {
@@ -82,6 +83,11 @@ export async function bulkReassignLeads(leadIds: string[], assignedTo: string) {
 // the mobile app there's no "current user is a telecaller" to default to).
 export async function createLead(fields: LeadFormInput, assignedTo: string | null) {
   const { supabase } = await requireManager();
+
+  // Only consult routing rules if the admin left assignment blank — an
+  // explicit choice always wins over automatic rules.
+  const finalAssignee = assignedTo ?? (await pickAssigneeForNewLead(supabase, fields.source, null));
+
   const { data, error } = await supabase
     .from("leads")
     .insert({
@@ -97,7 +103,7 @@ export async function createLead(fields: LeadFormInput, assignedTo: string | nul
       notes: fields.notes || null,
       khata_type: fields.khata_type || null,
       planning_timeline: fields.planning_timeline || null,
-      assigned_to: assignedTo,
+      assigned_to: finalAssignee,
       stage: "enquiryReceived",
     })
     .select("id")
@@ -118,14 +124,20 @@ export async function bulkImportLeads(
   assignedTo: string | null,
 ) {
   const { supabase } = await requireManager();
+
+  // Same rule: explicit choice wins, rules only apply when left unassigned.
+  const assignees = assignedTo
+    ? new Array(leadsToImport.length).fill(assignedTo)
+    : await pickAssigneesForBatch(supabase, source, null, leadsToImport.length);
+
   const { error } = await supabase.from("leads").insert(
-    leadsToImport.map((l) => ({
+    leadsToImport.map((l, i) => ({
       name: l.name,
       phone: l.phone,
       source,
       service_type: serviceType,
       city,
-      assigned_to: assignedTo,
+      assigned_to: assignees[i],
       stage: "enquiryReceived",
     })),
   );

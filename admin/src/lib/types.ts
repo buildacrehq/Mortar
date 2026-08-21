@@ -64,9 +64,22 @@ export type Lead = {
   lost_reason: LostReason | null;
   khata_type: KhataType | null;
   planning_timeline: PlanningTimeline | null;
+  campaign: string | null;
   last_contacted_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// A rule matches leads by source (required) and optionally campaign (more
+// specific — wins over a source-only rule for the same source). assignee_ids
+// is a pool of telecallers to round-robin between.
+export type AssignmentRule = {
+  id: string;
+  source: LeadSource;
+  campaign: string | null;
+  assignee_ids: string[];
+  is_active: boolean;
+  created_at: string;
 };
 
 export type CallLog = {

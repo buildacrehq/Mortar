@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { StrategySelector } from "@/components/strategy-selector";
 import { LeadAssignSelect } from "@/components/lead-detail-controls";
+import { AssignmentRulesManager } from "@/components/assignment-rules-manager";
 import Link from "next/link";
-import type { AssignmentStrategy, Profile } from "@/lib/types";
+import type { AssignmentStrategy, AssignmentRule, Profile } from "@/lib/types";
 
 export default async function AssignmentPage() {
   const supabase = await createClient();
@@ -41,6 +42,12 @@ export default async function AssignmentPage() {
     .limit(1)
     .single();
   const currentStrategy = (settingsRow?.assignment_strategy as AssignmentStrategy) ?? "linear";
+
+  const { data: rules } = await supabase
+    .from("assignment_rules")
+    .select("id, source, campaign, assignee_ids, is_active, created_at")
+    .order("created_at", { ascending: false })
+    .returns<AssignmentRule[]>();
 
   return (
     <div>
@@ -110,6 +117,10 @@ export default async function AssignmentPage() {
           </p>
           <StrategySelector current={currentStrategy} />
         </section>
+      </div>
+
+      <div className="mt-6">
+        <AssignmentRulesManager rules={rules ?? []} telecallers={tcList} />
       </div>
     </div>
   );
