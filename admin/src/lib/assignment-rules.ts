@@ -5,29 +5,34 @@ import type { LeadSource } from "./types";
 type Rule = { assignee_ids: string[] };
 
 // Prefers a source+campaign rule over a source-only rule for the same source.
+// Logs query errors loudly (Vercel function logs) instead of letting them look
+// identical to "no rule configured" — but never throws, since a rules-lookup
+// hiccup should never block creating the lead itself, just leave it unassigned.
 async function findMatchingRule(
   supabase: SupabaseClient,
   source: LeadSource,
   campaign: string | null,
 ): Promise<Rule | null> {
   if (campaign) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("assignment_rules")
       .select("assignee_ids")
       .eq("source", source)
       .eq("campaign", campaign)
       .eq("is_active", true)
       .maybeSingle();
+    if (error) console.error("[assignment-rules] campaign rule lookup failed:", error.message);
     if (data) return data;
   }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("assignment_rules")
     .select("assignee_ids")
     .eq("source", source)
     .is("campaign", null)
     .eq("is_active", true)
     .maybeSingle();
+  if (error) console.error("[assignment-rules] source rule lookup failed:", error.message);
   return data;
 }
 
@@ -37,10 +42,11 @@ async function currentLoadCounts(
 ): Promise<Map<string, number>> {
   const counts = await Promise.all(
     assigneeIds.map(async (id) => {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from("leads")
         .select("id", { count: "exact", head: true })
         .eq("assigned_to", id);
+      if (error) console.error("[assignment-rules] load count failed for", id, ":", error.message);
       return [id, count ?? 0] as const;
     }),
   );
